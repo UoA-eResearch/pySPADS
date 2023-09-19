@@ -1,0 +1,10 @@
+pandas
+geopandas
+jupyterlab
+shapely
+tqdm
+numpy
+matplotlib
+seaborn
+bokeh
+nodebook
