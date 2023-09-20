@@ -8,7 +8,7 @@ from scipy.io import loadmat
 from root import ROOT_DIR
 
 # This file contains functions to work with data in matlab format, as a bridge to working with raw GIS data
-data_dir = ROOT_DIR / 'data' / 'Data'
+data_dir = ROOT_DIR / 'data' / 'matlab'
 
 
 def datenum_to_datetime(datenum):
