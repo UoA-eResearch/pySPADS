@@ -4,6 +4,7 @@ jupyterlab
 shapely
 tqdm
 numpy
+scipy
 matplotlib
 seaborn
 bokeh
