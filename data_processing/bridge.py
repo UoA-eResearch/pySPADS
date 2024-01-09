@@ -102,7 +102,7 @@ def _mean_by_day(df: pd.DataFrame):
         .groupby('datenum')
         .mean()
         .drop(columns=['time'])
-        .rename(columns={'datenum': 't'})
+        .rename_axis('t')
     )
     return df
 
@@ -175,15 +175,29 @@ def load_shore_d():
     return _loadmat(fname, items)
 
 
-def _mean_by_day(df: pd.DataFrame):
-    df['datenum'] = (
-        df['time']
-        .apply(datetime_to_datenum)
-        .astype(int)
+def _complete_time_range(*columns: list[pd.Series]) -> list[int]:
+    """
+    Find the time range covering all DataFrames,
+    from the minimum value in the first to the maximum value in the last
+    """
+    min_time = min(col.min() for col in columns)
+    max_time = max(col.max() for col in columns)
+
+    return list(range(int(min_time), int(max_time) + 1))
+
+
+def _reindex_df(df: pd.DataFrame, time_range: list[int], interpolate=True) -> pd.DataFrame:
+    """Reindex DataFrame to fill gaps and interpolate"""
+    out = (
+        df
+        .copy()
+        .reindex(time_range, fill_value=np.nan)
     )
-    df = df.groupby('datenum').mean()
-    df = df.drop(columns=['time'])
-    return df
+
+    if interpolate:
+        return out.interpolate(method='linear')
+    else:
+        return out
 
 
 def load_data():
@@ -197,6 +211,12 @@ def load_data():
     # Features - PCA
     pca_df = load_SLP()
 
+    # Reindex each DataFrame to fill gaps and interpolate
+    time_range = _complete_time_range(shore_df.index)
+    shore_df = _reindex_df(shore_df, time_range)
+    hc_df = _reindex_df(hc_df, time_range)
+    pca_df = _reindex_df(pca_df, time_range)
+
     # Combine into one DataFrame, keeping only dates that are common to all
     combined = (
         shore_df
@@ -204,16 +224,4 @@ def load_data():
         .merge(pca_df, how='inner', left_index=True, right_index=True)
     )
 
-    # TODO - consider reindexing each first to fill gaps and interpolate, e.g.:
-    # Important - do this before combining
-    # shore_df = (
-    #     shore_df
-    #     .reindex(list(range(shore_df.index.min(), shore_df.index.max() + 1)), fill_value=np.nan)
-    #     .interpolate(method='linear')
-    # )
-
-    return (
-        combined
-        .reset_index()
-        .rename(columns={'datenum': 't'})
-    )
+    return combined
