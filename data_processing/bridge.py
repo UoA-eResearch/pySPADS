@@ -86,6 +86,27 @@ def _loadmat(fname, items: list[tuple], root_object=None, v73=False):
     return result
 
 
+def _mean_by_day(df: pd.DataFrame):
+    """Reduce time column to days, by taking mean value of other columns in each day"""
+    df = df.copy()
+    # Create column with integer day number
+    df['datenum'] = (
+        df['time']
+        .apply(datetime_to_datenum)
+        .astype(int)
+    )
+
+    # Take mean of other columns for each day
+    df = (
+        df
+        .groupby('datenum')
+        .mean()
+        .drop(columns=['time'])
+        .rename(columns={'datenum': 't'})
+    )
+    return df
+
+
 def load_shorecast():
     fname = data_dir / 'Shorecast_complete.mat'
     root_object = 'Shore'
@@ -98,7 +119,12 @@ def load_shorecast():
         ('alongshore', int),
     ]
 
-    return _loadmat(fname, items, root_object)
+    shore_dict = _loadmat(fname, items, root_object)
+
+    y = shore_dict['average'][:-1]  # drop trailing NaN
+    t = shore_dict['time'][:-1]
+    shore_df = pd.DataFrame({'y': y, 'time': t})
+    return _mean_by_day(shore_df)
 
 
 def load_hindcast():
@@ -113,7 +139,9 @@ def load_hindcast():
         # ('tm02', float),
     ]
 
-    return _loadmat(fname, items, root_object)
+    hc_dict = _loadmat(fname, items, root_object)
+    hc_df = pd.DataFrame(hc_dict)
+    return _mean_by_day(hc_df)
 
 
 def load_SLP():
@@ -128,7 +156,12 @@ def load_SLP():
         ('Dates_cal', 'datearray'),
     ]
 
-    return _loadmat(fname, items, root_object, v73=True)
+    pca = _loadmat(fname, items, root_object, v73=True)
+    as_dict = {'time': pca['Dates_cal']}
+    for i in range(10):
+        as_dict[f'PC{i}'] = pca['PC'][:, i]
+    pca_df = pd.DataFrame(as_dict)
+    return _mean_by_day(pca_df)
 
 
 def load_shore_d():
@@ -156,23 +189,31 @@ def _mean_by_day(df: pd.DataFrame):
 def load_data():
     """Load all data and do pre-processing"""
     # Target
-    shore = load_shorecast()
-    y = shore['average'][:-1]  # drop trailing NaN
-    t = shore['time'][:-1]
-    shore_df = pd.DataFrame({'y': y, 'time': t})
-    shore_df = _mean_by_day(shore_df)
+    shore_df = load_shorecast()
 
     # Features - hindcast
-    hindcast = load_hindcast()
-    hc_df = pd.DataFrame(hindcast)
-    hc_df = _mean_by_day(hc_df)
+    hc_df = load_hindcast()
 
     # Features - PCA
-    pca = load_SLP()
-    as_dict = {'time': pca['Dates_cal']}
-    for i in range(10):
-        as_dict[f'PC{i}'] = pca['PC'][:, i]
-    pca_df = pd.DataFrame(as_dict)
-    pca_df = _mean_by_day(pca_df)
+    pca_df = load_SLP()
 
-    return shore_df, hc_df, pca_df
+    # Combine into one DataFrame, keeping only dates that are common to all
+    combined = (
+        shore_df
+        .merge(hc_df, how='inner', left_index=True, right_index=True)
+        .merge(pca_df, how='inner', left_index=True, right_index=True)
+    )
+
+    # TODO - consider reindexing each first to fill gaps and interpolate, e.g.:
+    # Important - do this before combining
+    # shore_df = (
+    #     shore_df
+    #     .reindex(list(range(shore_df.index.min(), shore_df.index.max() + 1)), fill_value=np.nan)
+    #     .interpolate(method='linear')
+    # )
+
+    return (
+        combined
+        .reset_index()
+        .rename(columns={'datenum': 't'})
+    )
