@@ -10,3 +10,4 @@ seaborn
 bokeh
 nodebook
 EMD-signal
+scikit-learn
