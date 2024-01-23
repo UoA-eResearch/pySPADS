@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import click
 import pathlib
 
@@ -6,6 +8,7 @@ from tqdm import tqdm
 
 from pipeline.decompose import load_data_from_csvs, imf_filename
 from pipeline.decompose import  decompose as _decompose
+from pipeline.frequencies import load_imfs, match_frequencies
 from util.click import OptionNargs
 
 
@@ -59,3 +62,36 @@ def decompose(input, output, signal, timecol, noise, overwrite):
                 continue
             imf_dfs = _decompose(dfs[col], noise=ns, num_trials=100, progress=False)
             imf_dfs.to_csv(filename)
+
+
+@cli.command()
+@click.option('-o', '--output',
+              type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path),
+              help='Output directory')
+@click.option('-s', '--signal', type=str, help='Column name of signal to fit to')
+@click.option('--reject-noise', is_flag=True, help='Reject IMF modes containing mostly noise')
+@click.option('--noise-threshold', type=float, default=0.95, help='Threshold for rejecting IMF modes containing noise')
+@click.option('--frequency-threshold', type=float, default=0.25,
+            help='Threshold for accepting IMF modes with similar frequencies to signal frequency')
+def match(output, signal, reject_noise, noise_threshold, frequency_threshold):
+    """Match IMFs to each other"""
+    imfs = load_imfs(output / 'imfs')
+
+    # Re-organise imfs into dict[noise][label]
+    imfs_by_noise = defaultdict(dict)
+    for label, noise in imfs.keys():
+        imfs_by_noise[noise][label] = imfs[(label, noise)]
+
+    # Match frequencies
+    print('Matching frequencies')
+    for noise in imfs_by_noise:
+        print(f'Noise: {noise}')
+        nearest_freq = match_frequencies(imfs_by_noise[noise], signal, frequency_threshold)
+        nearest_freq.to_csv(output / f'frequencies_{noise}.csv')
+
+
+if __name__ == '__main__':
+    runner = CliRunner()
+
+    runner.invoke(match, ['-o', './output_test', '-s', 'shore'])
+    # runner.invoke(decompose, ['-i', './data/separate_files', '-o', './test_out', '-s', 'shore', '-n', '0.1', '0.2', '0.3'])
