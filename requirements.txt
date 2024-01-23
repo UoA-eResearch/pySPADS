@@ -11,3 +11,4 @@ bokeh
 nodebook
 EMD-signal
 scikit-learn
+click
