@@ -1,8 +1,9 @@
+import itertools
 from unittest import TestCase
 
 import pandas as pd
 
-from pipeline.decompose import load_data_from_csvs, _interpolate, decompose, imf_filename
+from pipeline.decompose import load_data_from_csvs, _interpolate, decompose, imf_filename, parse_filename
 from root import ROOT_DIR
 
 
@@ -72,3 +73,20 @@ class Test(TestCase):
         # Check expected noise precision
         filename = imf_filename(output_dir, 'shore', 0.123456789)
         self.assertEqual(filename, output_dir / 'shore_imf_0_123.csv')
+
+    def test_parse_filaname(self):
+        """Check that the filename is parsed correctly"""
+        filename = ROOT_DIR / 'data' / 'imfs' / 'shore_imf_0_100.csv'
+        label, noise = parse_filename(filename)
+
+        self.assertEqual(label, 'shore')
+        self.assertEqual(noise, 0.1)
+
+        for label, noise in itertools.product(
+            ['shore', 'test', 'a_', '_b', '_c__'],
+            [0, 0.1, 0.123456789]
+        ):
+            filename = imf_filename(ROOT_DIR / 'data' / 'imfs', label, noise)
+            parsed_label, parsed_noise = parse_filename(filename)
+            self.assertEqual(label, parsed_label)
+            self.assertEqual(round(noise, 3), parsed_noise)

@@ -55,6 +55,13 @@ def imf_filename(output_dir: Path, label: str, noise: float) -> Path:
     return output_dir / f'{label}_imf_{noise_str}.csv'
 
 
+def parse_filename(filename: Path) -> tuple[str, float]:
+    """Parse an IMF filename into label and noise"""
+    label, noise_str = filename.stem.split('_imf_')
+    noise = float(noise_str.replace('_', '.'))
+    return label, noise
+
+
 def decompose(data: pd.Series, noise: float, num_trials: int = 100, progress=False) -> pd.DataFrame:
     """
     Decompose a time series into IMF modes using CEEMDAN
