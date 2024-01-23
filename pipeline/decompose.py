@@ -49,6 +49,12 @@ def load_data_from_csvs(path: Path, time_col: str = 't') -> dict[str, pd.Series]
     return out
 
 
+def imf_filename(output_dir: Path, label: str, noise: float) -> Path:
+    """Generate a filename for an IMF file"""
+    noise_str = f'{noise:.3f}'.replace('.', '_')
+    return output_dir / f'{label}_imf_{noise_str}.csv'
+
+
 def decompose(data: pd.Series, noise: float, num_trials: int = 100, progress=False) -> pd.DataFrame:
     """
     Decompose a time series into IMF modes using CEEMDAN

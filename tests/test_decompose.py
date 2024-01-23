@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from pipeline.decompose import load_data_from_csvs, _interpolate, decompose
+from pipeline.decompose import load_data_from_csvs, _interpolate, decompose, imf_filename
 from root import ROOT_DIR
 
 
@@ -61,3 +61,14 @@ class Test(TestCase):
         # Expect column headers to be integer 0, 1, ...
         self.assertTrue(1 in imf_df.columns)
         self.assertTrue(isinstance(imf_df.columns[1], int))
+
+    def test_imf_filename(self):
+        """Check that the filename is generated correctly"""
+        output_dir = ROOT_DIR / 'data' / 'imfs'
+
+        filename = imf_filename(output_dir, 'shore', 0.1)
+        self.assertEqual(filename, output_dir / 'shore_imf_0_100.csv')
+
+        # Check expected noise precision
+        filename = imf_filename(output_dir, 'shore', 0.123456789)
+        self.assertEqual(filename, output_dir / 'shore_imf_0_123.csv')
