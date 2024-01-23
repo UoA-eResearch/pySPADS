@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from pipeline.decompose import load_data_from_csvs, _interpolate
+from pipeline.decompose import load_data_from_csvs, _interpolate, decompose
 from root import ROOT_DIR
 
 
@@ -46,3 +46,18 @@ class Test(TestCase):
             self.assertEqual(s, data[s].name)
 
         self.assertEqual(len(data), len(expected_series))
+
+    def test_decompose(self):
+        """Check that decomposition results in expected data"""
+        file = ROOT_DIR / 'data' / 'separate_files' / 'shore.csv'
+        data = load_data_from_csvs(file)['shore']
+
+        # Use only a small amount of data for testing
+        data = data[:1000]
+
+        imf_df = decompose(data, noise=0.1, NR=100, progress=False)
+
+        self.assertTrue(all(imf_df.index == data.index))
+        # Expect column headers to be integer 0, 1, ...
+        self.assertTrue(1 in imf_df.columns)
+        self.assertTrue(isinstance(imf_df.columns[1], int))

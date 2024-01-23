@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from PyEMD import CEEMDAN
 
 
 def _interpolate(df: pd.DataFrame) -> pd.DataFrame:
@@ -33,6 +34,10 @@ def load_data_from_csvs(path: Path, time_col: str = 't') -> dict[str, pd.Series]
     # Interpolate to regular time intervals
     dfs = [_interpolate(df) for df in dfs]
 
+    # Convert datetimes to seconds since epoch for internal use
+    for df in dfs:
+        df.index = df.index.astype(np.int64) // 10 ** 9
+
     # Note - We can't combine data, as they may have different time ranges
     # Return a dict of series
     out = {}
@@ -42,3 +47,21 @@ def load_data_from_csvs(path: Path, time_col: str = 't') -> dict[str, pd.Series]
             out[col] = df[col]
 
     return out
+
+
+def decompose(data: pd.Series, noise: float, num_trials: int = 100, progress=False) -> pd.DataFrame:
+    """
+    Decompose a time series into IMF modes using CEEMDAN
+    :param data: the timeseries to decompose
+    :param noise: noise level to use for CEEMDAN
+    :param num_trials: number of trials to use for CEEMDAN
+    :param progress: whether to show a progress bar
+    :return: a dataframe containing the IMF modes
+    """
+    assert data.index.inferred_type == 'integer', 'Index should be integer seconds since epoch'
+    assert data.index.is_monotonic_increasing, 'Data must be sorted by time'
+
+    ceemd = CEEMDAN(trials=num_trials, epsilon=noise, processes=8, parallel=True)
+    imfs = ceemd.ceemdan(data.to_numpy(), data.index.to_numpy(), progress=progress)
+
+    return pd.DataFrame(imfs.T, index=data.index)
