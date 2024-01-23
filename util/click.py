@@ -1,6 +1,7 @@
 import click
 
 
+# https://stackoverflow.com/questions/48391777/nargs-equivalent-for-options-in-click
 class OptionNargs(click.Option):
     def __init__(self, *args, **kwargs):
         self.save_other_options = kwargs.pop('save_other_options', True)
