@@ -3,12 +3,15 @@ from collections import defaultdict
 import click
 import pathlib
 
+import numpy as np
+import pandas as pd
 from click.testing import CliRunner
 from tqdm import tqdm
 
 from pipeline.decompose import load_data_from_csvs, imf_filename
 from pipeline.decompose import  decompose as _decompose
 from pipeline.frequencies import load_imfs, match_frequencies
+from pipeline.reconstruct import fit, get_X, hindcast_index
 from util.click import OptionNargs
 
 
@@ -90,8 +93,70 @@ def match(output, signal, reject_noise, noise_threshold, frequency_threshold):
         nearest_freq.to_csv(output / f'frequencies_{noise}.csv')
 
 
-if __name__ == '__main__':
-    runner = CliRunner()
+@cli.command()
+@click.option('-o', '--output',
+              type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path),
+              help='Output directory')
+@click.option('-s', '--signal', type=str, help='Column name of signal to fit to')
+def reconstruct(output, signal):
+    """Reconstruct signal from IMFs"""
+    #
+    imfs = load_imfs(output / 'imfs')
 
-    runner.invoke(match, ['-o', './output_test', '-s', 'shore'])
+    imfs_by_noise = defaultdict(dict)
+    for label, noise in imfs.keys():
+        imfs_by_noise[noise][label] = imfs[(label, noise)]
+
+    nearest_freq = {
+        noise: pd.read_csv(output / f'frequencies_{noise}.csv', index_col=0)
+        for noise in imfs_by_noise
+    }
+
+    coefs = {
+        noise: fit(imfs_by_noise[noise], nearest_freq[noise], signal)
+        for noise in imfs_by_noise
+    }
+
+    # Reconstruct
+    hindcast = defaultdict(dict)
+    hindcast_df = {}
+    for noise in imfs_by_noise:
+        output_columns = imfs_by_noise[noise][signal].columns
+        index = hindcast_index(imfs_by_noise[noise], signal)
+        predictions = pd.DataFrame(index=index, columns=output_columns)
+        for component in imfs_by_noise[noise][signal].columns:
+            X = get_X(imfs_by_noise[noise], nearest_freq[noise], signal, component, index)
+
+            pred = np.sum([X[c] * coefs[noise][component][i] for i, c in enumerate(X.columns)], axis=0)
+            predictions.loc[:, component] = pred
+            hindcast_df[noise] = predictions
+            hindcast[noise][component] = pred
+
+        predictions.to_csv(output / f'predictions_{noise}.csv')
+
+    # Reconstructed signal for each noise value
+    by_noise = {
+        noise: sum(list(hindcast[noise].values()))
+        for noise in hindcast
+    }
+    for noise, series in by_noise.items():
+        np.savetxt(output / f'reconstructed_{noise}.csv', series, delimiter=',')
+
+    by_noise_df = {
+        noise: hindcast_df[noise].sum(axis=1)
+        for noise in hindcast_df
+    }
+
+    total = sum(list(by_noise.values())) / len(by_noise)
+    np.savetxt(output / 'reconstructed_total.csv', total, delimiter=',')
+
+    total_df = sum(list(by_noise_df.values())) / len(by_noise_df)
+    total_df.to_csv(output / 'reconstructed_total_df.csv')
+
+
+# Don't run this directly - it's here to enable breakpoint debugging
+# if __name__ == '__main__':
+    # runner = CliRunner()
+
     # runner.invoke(decompose, ['-i', './data/separate_files', '-o', './test_out', '-s', 'shore', '-n', '0.1', '0.2', '0.3'])
+    # runner.invoke(reconstruct, ['-o', './output_test', '-s', 'shore'])
