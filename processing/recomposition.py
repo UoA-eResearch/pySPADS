@@ -4,13 +4,44 @@ import warnings
 from .significance import zero_crossings
 
 
+def _is_epoch_seconds(value):
+    """Check if a value is in seconds since epoch"""
+
+    return abs(value) < 10000 * 10 ** 9
+
+
+def epoch_index_to_days(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert the index of a DataFrame from epoch time (in seconds) to days since epoch
+    :param df: DataFrame with epoch time index
+    :return: DataFrame with index converted to days
+    """
+    assert all(df.index < 10000 * 10 ** 9), \
+        "Expecting input timeseries to be in seconds since epoch, data looks like nanoseconds"
+    return df.set_index(df.index // (24 * 60 * 60))
+
+
+def epoch_index_to_datetime(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert the index of a DataFrame from epoch time (in seconds) to datetime
+    :param df: DataFrame with epoch time index
+    :return: DataFrame with index converted to datetime
+    """
+    assert all(df.index < 10000 * 10 ** 9), \
+        "Expecting input timeseries to be in seconds since epoch, data looks like nanoseconds"
+    return df.set_index(pd.to_datetime(df.index, unit='s'))
+
+
 def component_frequencies(imfs: pd.DataFrame) -> pd.Series:
     """
     Calculate the frequency of each IMF mode, in cycles per year
     :param imfs: DataFrame of IMF modes, with one column for each mode
     """
+    assert imfs.index.inferred_type == 'datetime64', 'Expecting input timeseries to be in datetime format'
     t_range = imfs.index.max() - imfs.index.min()
-    return 365 * imfs.apply(zero_crossings, axis=0) / (2 * t_range)
+    assert t_range.days == len(imfs) - 1, "Expecting input timeseries to be evenly spaced, with daily frequency"
+
+    return 365 * imfs.apply(zero_crossings, axis=0) / (2 * t_range.days)
 
 
 def nearest_frequency(output_freqs: pd.Series, input_freqs: pd.DataFrame) -> pd.DataFrame:

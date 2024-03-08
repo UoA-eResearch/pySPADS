@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 
 from pipeline.decompose import parse_filename
-from processing.recomposition import component_frequencies, nearest_frequency, relative_frequency_difference
+from processing.recomposition import component_frequencies, nearest_frequency, relative_frequency_difference, \
+    epoch_index_to_datetime
 
 
 def load_imfs(folder: Path) -> dict[tuple[str, float], pd.DataFrame]:
@@ -17,7 +18,12 @@ def load_imfs(folder: Path) -> dict[tuple[str, float], pd.DataFrame]:
     imfs = {}
     for file in folder.glob('*.csv'):
         label, noise = parse_filename(file)
-        imfs[(label, noise)] = pd.read_csv(file, index_col=0)
+        imfs[(label, noise)] = pd.read_csv(file, index_col=0, parse_dates=True)
+
+        # TODO: temporary until data is regenerated
+        for key in imfs:
+            if imfs[key].index.inferred_type == 'integer':
+                imfs[key] = epoch_index_to_datetime(imfs[key])
 
         # Convert column names to ints
         imfs[(label, noise)].columns = imfs[(label, noise)].columns.astype(int)

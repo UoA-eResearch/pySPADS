@@ -129,9 +129,9 @@ def reconstruct(output, signal):
 
             pred = np.sum([X[c] * coefs[noise][component][i] for i, c in enumerate(X.columns)], axis=0)
             predictions.loc[:, component] = pred
-            hindcast_df[noise] = predictions
             hindcast[noise][component] = pred
 
+        hindcast_df[noise] = predictions
         predictions.to_csv(output / f'predictions_{noise}.csv')
 
     # Reconstructed signal for each noise value
