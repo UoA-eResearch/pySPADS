@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pipeline.frequencies import load_imfs
+from processing.data import load_imfs
 from root import ROOT_DIR
 
 

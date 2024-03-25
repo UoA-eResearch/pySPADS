@@ -9,8 +9,9 @@ from click.testing import CliRunner
 from tqdm import tqdm
 
 from pipeline.decompose import load_data_from_csvs, imf_filename
-from pipeline.decompose import  decompose as _decompose
-from pipeline.frequencies import load_imfs, match_frequencies
+from pipeline.decompose import decompose as _decompose
+from pipeline.frequencies import match_frequencies
+from processing.data import load_imfs
 from pipeline.reconstruct import fit, get_X, hindcast_index
 from util.click import OptionNargs
 
@@ -75,7 +76,7 @@ def decompose(input, output, signal, timecol, noise, overwrite):
 @click.option('--reject-noise', is_flag=True, help='Reject IMF modes containing mostly noise')
 @click.option('--noise-threshold', type=float, default=0.95, help='Threshold for rejecting IMF modes containing noise')
 @click.option('--frequency-threshold', type=float, default=0.25,
-            help='Threshold for accepting IMF modes with similar frequencies to signal frequency')
+              help='Threshold for accepting IMF modes with similar frequencies to signal frequency')
 def match(output, signal, reject_noise, noise_threshold, frequency_threshold):
     """Match IMFs to each other"""
     imfs = load_imfs(output / 'imfs')

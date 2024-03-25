@@ -4,7 +4,7 @@ import warnings
 from .significance import zero_crossings
 
 
-def _is_epoch_seconds(value):
+def _is_epoch_seconds(value) -> bool:
     """Check if a value is in seconds since epoch"""
 
     return abs(value) < 10000 * 10 ** 9
