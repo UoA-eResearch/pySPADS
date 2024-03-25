@@ -8,10 +8,9 @@ import pandas as pd
 from click.testing import CliRunner
 from tqdm import tqdm
 
-from pipeline.decompose import load_data_from_csvs, imf_filename
 from pipeline.decompose import decompose as _decompose
 from pipeline.frequencies import match_frequencies
-from processing.data import load_imfs
+from processing.data import load_imfs, load_data_from_csvs, imf_filename
 from pipeline.reconstruct import fit, get_X, hindcast_index
 from util.click import OptionNargs
 

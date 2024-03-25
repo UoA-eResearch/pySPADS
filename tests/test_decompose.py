@@ -3,7 +3,8 @@ from unittest import TestCase
 
 import pandas as pd
 
-from pipeline.decompose import load_data_from_csvs, _interpolate, decompose, imf_filename, parse_filename
+from pipeline.decompose import decompose
+from processing.data import _interpolate, load_data_from_csvs, imf_filename, parse_filename
 from root import ROOT_DIR
 
 
