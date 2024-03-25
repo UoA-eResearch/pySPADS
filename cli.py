@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 
 import click
@@ -25,6 +26,53 @@ def cli():
 def run(path):
     """Run the full pipeline"""
     print("Not implemented")
+
+
+@cli.command()
+@click.option('-i', '--input',
+              type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=pathlib.Path),
+              help='Input data file or directory, expects either a csv, or a directory of csvs',
+              required=True)
+@click.option('-o', '--output',
+              type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path),
+              help='Output directory')
+@click.option('--timecol', type=str, default='t', help='Column name of time index')
+def setup(input, output, timecol):
+    """Creates json metadata indicating how data should be decomposed"""
+    print(f'Loading data from {input}')
+    dfs = load_data_from_csvs(input, timecol)
+
+    # Select signal
+    # Note - there's no reason to have only one signal, we may want to generate multiple signals from the same input
+    print('\nSelect signal to decompose')
+    print('Available signals:')
+    print('\t' + '  '.join(dfs.keys()))
+    signals = click.prompt('Enter signal(s) to decompose, separated by spaces', type=str, default='shore').split(' ')
+
+    # Select noise values
+    print('\nSelect noise values to use when decomposing IMFs')
+    noise = click.prompt('Enter noise values, separated by spaces', type=str, default='.25').split(' ')
+    noise = tuple(float(n) for n in noise)
+
+    # Print time range for each input
+    print('\nTime ranges:')
+    for col, df in dfs.items():
+        print(f'{col}: {df.index.min()} - {df.index.max()}')
+
+    # Select start and end times
+    print('By default, all data will be decomposed over the full time range available')
+    print('For hindcasting, enter the cutoff date - where decomposition stops and hindcasting begins')
+    hindcast_str = click.prompt('Enter end date for decomposition', type=str, default=dfs[signals[0]].index.max())
+    hindcast_date = pd.to_datetime(hindcast_str)
+
+    # Save metadata
+    metadata = {
+        'signals': signals,
+        'noise': noise,
+        'hindcast_date': hindcast_date,
+    }
+    with open(output / 'metadata.json', 'w') as f:
+        json.dump(metadata, f)
 
 
 def _parse_noise(ctx, param, value):
