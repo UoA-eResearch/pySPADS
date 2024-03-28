@@ -5,6 +5,7 @@ from optimization import mreg2
 
 
 def hindcast_index(imfs, signal):
+    # TODO - fix this for actual hindcast, where signal index does not include hindcast period
     not_signal = list(imfs.keys() - {signal})
     return imfs[signal].index[imfs[signal].index.isin(imfs[not_signal[0]].index)]
 
