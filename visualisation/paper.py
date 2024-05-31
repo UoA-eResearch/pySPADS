@@ -13,7 +13,8 @@ import seaborn as sns
 def _mask_datetime(df, start, end):
     """Convert datenum index to datetime, and mask to start/end datetimes"""
     out = df.copy()
-    out.index = out.index.map(datenum_to_datetime)
+    if not isinstance(out.index, pd.DatetimeIndex):
+        out.index = out.index.map(datenum_to_datetime)
     return out[(out.index >= start) & (out.index <= end)]
 
 
@@ -53,7 +54,7 @@ def fig2(shore: pd.Series, shore_imf: pd.DataFrame, start: datetime, end: dateti
         warnings.simplefilter("ignore", category=FutureWarning)
 
         output = _mask_datetime(shore, start, end)
-        trend = _mask_datetime(shore_imf[len(shore_imf.columns)], start, end)
+        trend = _mask_datetime(shore_imf[len(shore_imf.columns)-1], start, end)
         sns.scatterplot(x=output.index, y=output, ax=axes[0], s=2)
         sns.lineplot(x=trend.index, y=trend, ax=axes[0], color='red')
 
@@ -77,7 +78,7 @@ def fig2(shore: pd.Series, shore_imf: pd.DataFrame, start: datetime, end: dateti
     return fig
 
 
-def fig3(all_imfs: dict[str, pd.DataFrame], start: datetime, end: datetime):
+def fig3(all_imfs: dict[str, pd.DataFrame], signal_col: str, start: datetime, end: datetime):
     """Figure 3: Drivers and shoreline response"""
     fig, axes = plt.subplots(4, 1, figsize=(10, 10))
 
@@ -88,7 +89,7 @@ def fig3(all_imfs: dict[str, pd.DataFrame], start: datetime, end: datetime):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=FutureWarning)
 
-        s0 = _mask_datetime(all_imfs['output'][5], start, end)
+        s0 = _mask_datetime(all_imfs[signal_col][5], start, end)
         d0 = _mask_datetime(all_imfs['Hs'][5], start, end)
         sns.lineplot(x=s0.index, y=s0, ax=axes[0], color='red')
         ax0 = axes[0].twinx()
@@ -96,7 +97,7 @@ def fig3(all_imfs: dict[str, pd.DataFrame], start: datetime, end: datetime):
         axes[0].set(ylabel='IMF_S[m]')
         ax0.set(ylabel='IMF_Hs[m]')
 
-        s1 = _mask_datetime(all_imfs['output'][6], start, end)
+        s1 = _mask_datetime(all_imfs[signal_col][6], start, end)
         d1 = _mask_datetime(all_imfs['Hs'][7], start, end)
         sns.lineplot(x=s1.index, y=s1, ax=axes[1], color='red')
         ax1 = axes[1].twinx()
@@ -104,7 +105,7 @@ def fig3(all_imfs: dict[str, pd.DataFrame], start: datetime, end: datetime):
         axes[1].set(ylabel='IMF_S[m]')
         ax1.set(ylabel='IMF_Hs[m]')
 
-        s2 = _mask_datetime(all_imfs['output'][8], start, end)
+        s2 = _mask_datetime(all_imfs[signal_col][8], start, end)
         d2 = _mask_datetime(all_imfs['PC1'][8], start, end)
         sns.lineplot(x=s2.index, y=s2, ax=axes[2], color='red')
         ax2 = axes[2].twinx()
@@ -112,7 +113,7 @@ def fig3(all_imfs: dict[str, pd.DataFrame], start: datetime, end: datetime):
         axes[2].set(ylabel='IMF_S[m]')
         ax2.set(ylabel='IMF_PC1[m]')
 
-        s3 = _mask_datetime(all_imfs['output'][8], start, end)
+        s3 = _mask_datetime(all_imfs[signal_col][8], start, end)
         d3 = _mask_datetime(all_imfs['PC1'].sum(axis=1), start, end)
         sns.scatterplot(x=s3.index, y=s3, ax=axes[3], color='black', s=2)
         ax3 = axes[3].twinx()
@@ -123,7 +124,7 @@ def fig3(all_imfs: dict[str, pd.DataFrame], start: datetime, end: datetime):
     return fig
 
 
-def fig4(shore: pd.Series, imf_predictions: pd.DataFrame, start: datetime, end: datetime):
+def fig4(shore: pd.Series, imf_predictions: pd.Series, start: datetime, end: datetime):
     """Figure 4: Shoreline predictions"""
     fig, axes = plt.subplots(1, 1, figsize=(10, 5))
 
@@ -131,7 +132,7 @@ def fig4(shore: pd.Series, imf_predictions: pd.DataFrame, start: datetime, end: 
         warnings.simplefilter("ignore", category=FutureWarning)
 
         s0 = _mask_datetime(shore, start, end)
-        p0 = _mask_datetime(imf_predictions.sum(axis=1), start, end)
+        p0 = _mask_datetime(imf_predictions, start, end)
         sns.lineplot(x=s0.index, y=s0, ax=axes, color='black')
         sns.lineplot(x=p0.index, y=p0, ax=axes, color='red')
         axes.set(xlabel='Date', ylabel='Shoreline (m)')

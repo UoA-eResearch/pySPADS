@@ -68,7 +68,7 @@ if __name__ == '__main__':
             imfs_by_noise[noise] = {}
         imfs_by_noise[noise][label] = imfs[(label, noise)]
 
-    f = paper.fig3(imfs_by_noise[0.1], '1999-01-01', '2017-01-01')
+    f = paper.fig3(imfs_by_noise[0.1], signal, '1999-01-01', '2017-01-01')
     f.savefig(output_folder / 'fig3.png')
 
     nearest_freqs = {}
