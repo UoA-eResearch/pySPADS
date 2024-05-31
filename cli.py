@@ -159,4 +159,4 @@ def reconstruct(output, signal):
     # runner = CliRunner()
 
     # runner.invoke(decompose, ['-i', './data/separate_files', '-o', './test_out', '-s', 'shore', '-n', '0.1', '0.2', '0.3'])
-    # runner.invoke(reconstruct, ['-o', './output_test', '-s', 'shore'])
+    # runner.invoke(reconstruct, ['-o', '.data/run_output_test', '-s', 'shore'])

@@ -159,5 +159,9 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+# Reference docs (e.g.: papers)
+reference/
+
 # Output data
 output/
+data/run*/

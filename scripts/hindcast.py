@@ -12,8 +12,10 @@ from processing.data import load_data_from_csvs, imf_filename, load_imfs
 from visualisation import paper
 
 if __name__ == '__main__':
-    input_folder = Path(__file__).parent.parent / 'data' / 'separate_files'
-    output_folder = Path(__file__).parent.parent / 'hindcast_output'
+    run_label = 'run1'
+
+    input_folder = Path(__file__).parent.parent / 'data' / run_label / 'input'
+    output_folder = Path(__file__).parent.parent / 'data' / run_label
     output_folder.mkdir(parents=True, exist_ok=True)
 
     # Load input data
@@ -33,7 +35,7 @@ if __name__ == '__main__':
 
     # Replicate figures from paper
     f = paper.fig1(dfs['PC0'], dfs['Hs'], dfs['Tp'], dfs['Dir'], '2004-01-01', '2016-01-01')
-    f.savefig(output_folder / 'fig1.png')
+    f.savefig(output_folder / 'figures' / 'fig1.png')
 
     # Perform decomposition (warning: takes ~4 hours)
     imf_dir = output_folder / 'imfs'
@@ -59,7 +61,7 @@ if __name__ == '__main__':
 
     # TODO - check which noise value to use
     f = paper.fig2(dfs[signal], imfs[(signal, 0.1)], '1999-01-01', '2017-01-01')
-    f.savefig(output_folder / 'fig2.png')
+    f.savefig(output_folder / 'figures' / 'fig2.png')
 
     # Re-organise imfs into dict[noise][label]
     imfs_by_noise = {}
@@ -69,7 +71,7 @@ if __name__ == '__main__':
         imfs_by_noise[noise][label] = imfs[(label, noise)]
 
     f = paper.fig3(imfs_by_noise[0.1], signal, '1999-01-01', '2017-01-01')
-    f.savefig(output_folder / 'fig3.png')
+    f.savefig(output_folder / 'figures' / 'fig3.png')
 
     nearest_freqs = {}
     for noise in imfs_by_noise:
@@ -110,4 +112,4 @@ if __name__ == '__main__':
 
     # TODO - test this, total may not be the right structure
     f = paper.fig4(dfs[signal], total, '2010-01-01', '2017-01-01')
-    f.savefig(output_folder / 'fig4.png')
+    f.savefig(output_folder / 'figures' / 'fig4.png')
