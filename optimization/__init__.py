@@ -20,6 +20,8 @@ def mreg2(y, X):
     reg = LinearRegression().fit(X, y)
     bb = reg.coef_
 
-    beta = fmin(calc_SSE_all_Coef, bb, args=(y.to_numpy(), X.to_numpy()), maxiter=100000, maxfun=100000)
+    beta = fmin(calc_SSE_all_Coef, bb, args=(y.to_numpy(), X.to_numpy()),
+                maxiter=100000, maxfun=100000,
+                disp=False)
 
     return beta

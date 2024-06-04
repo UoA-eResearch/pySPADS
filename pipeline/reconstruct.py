@@ -23,7 +23,7 @@ def get_y(imfs, signal, component, hindcast_index):
     return imfs[signal].loc[hindcast_index, component]
 
 
-def fit(imfs, nearest_freqs, signal):
+def fit(imfs, nearest_freqs, signal) -> dict[str, np.ndarray]:
     index = hindcast_index(imfs, signal)
 
     output = {}
@@ -34,7 +34,5 @@ def fit(imfs, nearest_freqs, signal):
         coefs = mreg2(y, X)
 
         output[component] = coefs
-
-    print(output)
 
     return output

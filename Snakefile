@@ -68,6 +68,7 @@ rule dates:
 
 
 rule decompose:
+    # Decompose each channel into IMFs
     input:
         folder='data/{folder}/input',
         dates='data/{folder}/dates.json'
@@ -79,6 +80,7 @@ rule decompose:
         'snakemake/decompose.py'
 
 rule nearest_freq:
+    # Find nearest frequencies in drivers to each signal IMF
     input:
         expand('data/{{folder}}/imfs/{label}_imf_{{noise}}.csv', label=input_columns)
     output:
@@ -88,6 +90,17 @@ rule nearest_freq:
     script:
         'snakemake/nearest_freq.py'
 
+rule fit:
+    # Fit a model to each signal IMF
+    input:
+        imfs=expand('data/{{folder}}/imfs/{label}_imf_{{noise}}.csv', label=input_columns),
+        freqs='data/{folder}/nearest_frequencies_{noise}.csv'
+    output:
+        'data/{folder}/coefficients_{noise}.json'
+    params:
+        c=configuration
+    script:
+        'snakemake/fit.py'
 
 # Paper figures
 rule paper_fig1:
