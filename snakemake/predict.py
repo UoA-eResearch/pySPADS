@@ -1,9 +1,10 @@
 import json
-
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
-from pipeline.reconstruct import get_X
+from pipeline.reconstruct import get_X, get_y
 from processing.data import parse_filename, load_imf
 
 # Parameters
@@ -43,6 +44,17 @@ for component in output_columns:
     pred = np.sum([X[c] * coeffs[component][i]
                    for i, c in enumerate(X.columns)], axis=0)
     predictions.loc[:, component] = pred
+
+    # Plot prediction vs. signal for debugging
+    plt.figure()
+    y = get_y(imfs, signal, component, imfs[signal].index)
+    plt.plot(y, label='signal')
+    plt.plot(index, pred, label='prediction', alpha=0.5)
+    plt.legend()
+    plt.title(f'Noise {noise}, Component {component}')
+    fname = Path(snakemake.output[0]).parent / 'figures' / 'predictions' / f'pred_{noise}_{component}.png'
+    fname.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(fname)
 
 # Save
 predictions.to_csv(snakemake.output[0])
