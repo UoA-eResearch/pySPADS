@@ -59,7 +59,9 @@ rule all_figures:
         expand('data/{{folder}}/figures/paper_fig3_{noise}.png', noise=config_noises),
         'data/{folder}/figures/paper_fig3_mean.png',
         # Fig 4
-        'data/{folder}/figures/paper_fig4.png'
+        'data/{folder}/figures/paper_fig4.png',
+        # All imfs
+        expand('data/{{folder}}/figures/imfs/{label}_imf_{noise}.png', label=input_columns, noise=config_noises)
     output:
         # Fake output file in order to capture folder wildcard
         touch('data/{folder}/figures/all_figures.mark')
@@ -136,6 +138,15 @@ rule combine_preds:
         c=configuration
     script:
         'snakemake/combine_preds.py'
+
+# Visualisation
+rule plot_imf:
+    input:
+        imf='data/{folder}/imfs/{label}_imf_{noise}.csv'
+    output:
+        'data/{folder}/figures/imfs/{label}_imf_{noise}.png'
+    script:
+        'snakemake/plot_imf.py'
 
 # Paper figures
 rule paper_fig1:
