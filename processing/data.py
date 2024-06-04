@@ -6,6 +6,24 @@ import pandas as pd
 from processing.recomposition import epoch_index_to_datetime
 
 
+def load_imf(file: Path) -> pd.DataFrame:
+    """
+    Load an IMF from a file
+    :param file: path to the file
+    :return: the IMF as a DataFrame
+    """
+    imf = pd.read_csv(file, index_col=0, parse_dates=True)
+
+    # TODO: temporary until data is regenerated
+    if imf.index.inferred_type == 'integer':
+        imf = epoch_index_to_datetime(imf)
+
+    # Convert column names to ints
+    imf.columns = imf.columns.astype(int)
+
+    return imf
+
+
 def load_imfs(folder: Path) -> dict[tuple[str, float], pd.DataFrame]:
     """
     Load IMFs from a folder, parse label and noise from filenames
@@ -16,15 +34,8 @@ def load_imfs(folder: Path) -> dict[tuple[str, float], pd.DataFrame]:
     imfs = {}
     for file in folder.glob('*.csv'):
         label, noise = parse_filename(file)
-        imfs[(label, noise)] = pd.read_csv(file, index_col=0, parse_dates=True)
+        imfs[(label, noise)] = load_imf(file)
 
-        # TODO: temporary until data is regenerated
-        for key in imfs:
-            if imfs[key].index.inferred_type == 'integer':
-                imfs[key] = epoch_index_to_datetime(imfs[key])
-
-        # Convert column names to ints
-        imfs[(label, noise)].columns = imfs[(label, noise)].columns.astype(int)
     return imfs
 
 
@@ -46,6 +57,9 @@ def load_data_from_csvs(path: Path, time_col: str = 't') -> dict[str, pd.Series]
     :param time_col: name of the datetime column
     :return: a dict containing a pd.Series for each timeseries found
     """
+    if isinstance(path, str):
+        path = Path(path)
+
     if path.is_dir():
         # Load all csv files in directory
         dfs = [pd.read_csv(file, parse_dates=[time_col]).set_index(time_col)
@@ -74,12 +88,18 @@ def load_data_from_csvs(path: Path, time_col: str = 't') -> dict[str, pd.Series]
 
 def imf_filename(output_dir: Path, label: str, noise: float) -> Path:
     """Generate a filename for an IMF file"""
+    if isinstance(output_dir, str):
+        output_dir = Path(output_dir)
+
     noise_str = f'{noise:.3f}'.replace('.', '_')
     return output_dir / f'{label}_imf_{noise_str}.csv'
 
 
 def parse_filename(filename: Path) -> tuple[str, float]:
     """Parse an IMF filename into label and noise"""
+    if isinstance(filename, str):
+        filename = Path(filename)
+
     label, noise_str = filename.stem.split('_imf_')
     noise = float(noise_str.replace('_', '.'))
     return label, noise
