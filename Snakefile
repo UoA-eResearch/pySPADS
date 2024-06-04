@@ -66,7 +66,7 @@ rule dates:
     script:
         'snakemake/dates.py'
 
-
+# TODO: this seems too fast - test for all cols/noises?
 rule decompose:
     # Decompose each channel into IMFs
     input:
@@ -101,6 +101,20 @@ rule fit:
         c=configuration
     script:
         'snakemake/fit.py'
+
+rule predict:
+    # Predict each signal IMF
+    input:
+        imfs=expand('data/{{folder}}/imfs/{label}_imf_{{noise}}.csv', label=input_columns),
+        freqs='data/{folder}/nearest_frequencies_{noise}.csv',
+        coeffs='data/{folder}/coefficients_{noise}.json',
+        dates='data/{folder}/dates.json'
+    output:
+        'data/{folder}/predictions_{noise}.csv'
+    params:
+        c=configuration
+    script:
+        'snakemake/predict.py'
 
 # Paper figures
 rule paper_fig1:
