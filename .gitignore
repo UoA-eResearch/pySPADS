@@ -165,3 +165,6 @@ reference/
 # Output data
 output/
 data/run*/
+
+# Snakemake temp files
+.snakemake/
