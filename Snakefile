@@ -10,6 +10,29 @@ def configuration(wildcards):
 
     return config
 
+
+def input_files(wildcards):
+    import glob
+    input_folder = f'data/{wildcards.folder}/input'
+    return glob.glob(input_folder + '/*.csv')
+
+
+def input_columns(wildcards):
+    """Get all columns from all input files."""
+    import pandas as pd
+    files = input_files(wildcards)
+    columns = []
+    for file in files:
+        df = pd.read_csv(file)
+        columns.extend(df.columns)
+
+    # Exclude time column
+    columns = set(columns)
+    config = configuration(wildcards)
+    columns.discard(config['time_col'])
+    return list(columns)
+
+
 def expand_config(path, folder=None):
     def _expand(wildcards):
         # if folder:
@@ -54,6 +77,16 @@ rule decompose:
         c=configuration
     script:
         'snakemake/decompose.py'
+
+rule nearest_freq:
+    input:
+        expand('data/{{folder}}/imfs/{label}_imf_{{noise}}.csv', label=input_columns)
+    output:
+        'data/{folder}/nearest_frequencies_{noise}.csv'
+    params:
+        c=configuration
+    script:
+        'snakemake/nearest_freq.py'
 
 
 # Paper figures

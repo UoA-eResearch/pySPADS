@@ -2,3 +2,4 @@ signal: shore
 time_col: t
 noises: [0.1, 0.2, 0.3, 0.4, 0.5]
 hindcast_date: 2012-01-01
+frequency_threshold: 0.25
