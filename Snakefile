@@ -10,6 +10,16 @@ def configuration(wildcards):
 
     return config
 
+def expand_config(path, folder=None):
+    def _expand(wildcards):
+        # if folder:
+        #     wildcards['folder'] = folder
+        config = configuration(wildcards)
+        return expand(path, **config)
+
+    return _expand
+
+        # Fig 1
 rule dates:
     # Get timespan for analysis
     input:
@@ -45,19 +55,10 @@ rule paper_fig1:
     script:
         'snakemake/paper_fig1.py'
 
-
-def paper2_files(wildcards):
-    # IMFs for signal column, for all noises
-    config = configuration(wildcards)
-    noise_str = lambda n: f'{n:.3f}'.replace('.', '_')
-    return ['data/{folder}/imfs/{label}_imf_{noise}.csv'.format(
-        folder=wildcards.folder, label=config['signal'], noise=noise_str(n)) for n in config['noises']]
-
-
 rule paper_fig2:
     input:
         folder='data/{folder}/input',
-        signal_imfs=paper2_files
+        signal_imfs=expand_config('data/{{folder}}/imfs/{signal}_imf_{noises}.csv')
     output:
         'data/{folder}/figures/paper_fig2_{noise}.png',
     params:
