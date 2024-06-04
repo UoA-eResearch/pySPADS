@@ -33,6 +33,11 @@ def input_columns(wildcards):
     return list(columns)
 
 
+def config_noises(wildcards):
+    config = configuration(wildcards)
+    return config['noises']
+
+
 def expand_config(path, folder=None):
     def _expand(wildcards):
         # if folder:
@@ -48,8 +53,13 @@ rule all_figures:
         # Fig 1
         'data/{folder}/figures/paper_fig1.png',
         # Fig 2 (noises + mean)
-        expand_config('data/{{folder}}/figures/paper_fig2_{noises}.png'),
+        expand('data/{{folder}}/figures/paper_fig2_{noise}.png', noise=config_noises),
         'data/{folder}/figures/paper_fig2_mean.png',
+        # Fig 3 (noises + mean)
+        expand('data/{{folder}}/figures/paper_fig3_{noise}.png', noise=config_noises),
+        'data/{folder}/figures/paper_fig3_mean.png',
+        # Fig 4
+        'data/{folder}/figures/paper_fig4.png'
     output:
         # Fake output file in order to capture folder wildcard
         touch('data/{folder}/figures/all_figures.mark')
@@ -116,6 +126,17 @@ rule predict:
     script:
         'snakemake/predict.py'
 
+rule combine_preds:
+    # Combine all predictions
+    input:
+        expand('data/{{folder}}/predictions_{noise}.csv', noise=config_noises)
+    output:
+        'data/{folder}/predictions.csv'
+    params:
+        c=configuration
+    script:
+        'snakemake/combine_preds.py'
+
 # Paper figures
 rule paper_fig1:
     input:
@@ -137,3 +158,38 @@ rule paper_fig2:
         c=configuration
     script:
         'snakemake/paper_fig2.py'
+
+rule paper_fig3:
+    input:
+        imfs = expand('data/{{folder}}/imfs/{label}_imf_{{noise}}.csv', label=input_columns),
+    output:
+        'data/{folder}/figures/paper_fig3_{noise}.png',
+    params:
+        c=configuration
+    wildcard_constraints:
+        noise=r'\d+\.\d+'
+    script:
+        'snakemake/paper_fig3.py'
+
+rule paper_fig3_mean:
+    input:
+        imfs=expand('data/{{folder}}/imfs/{label}_imf_{noise}.csv', label=input_columns, noise=config_noises),
+    output:
+        'data/{folder}/figures/paper_fig3_{noise}.png',
+    params:
+        c=configuration
+    wildcard_constraints:
+        noise='mean'
+    script:
+        'snakemake/paper_fig3.py'
+
+rule paper_fig4:
+    input:
+        folder='data/{folder}/input',
+        predictions='data/{folder}/predictions.csv'
+    output:
+        'data/{folder}/figures/paper_fig4.png'
+    params:
+        c=configuration
+    script:
+        'snakemake/paper_fig4.py'

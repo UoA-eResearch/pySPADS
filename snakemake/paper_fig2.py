@@ -24,6 +24,7 @@ if snakemake.wildcards.noise == 'mean':
         .mean()
     )
 
+    # TODO - this date range requires the full signal to be decomposed, not just the start-hindcast period
     f = paper.fig2(dfs[signal], combined, '1999-01-01', '2017-01-01')
     f.savefig(snakemake.output[0])
 else:
