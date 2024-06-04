@@ -19,7 +19,19 @@ def expand_config(path, folder=None):
 
     return _expand
 
+
+rule all_figures:
+    input:
         # Fig 1
+        'data/{folder}/figures/paper_fig1.png',
+        # Fig 2 (noises + mean)
+        expand_config('data/{{folder}}/figures/paper_fig2_{noises}.png'),
+        'data/{folder}/figures/paper_fig2_mean.png',
+    output:
+        # Fake output file in order to capture folder wildcard
+        touch('data/{folder}/figures/all_figures.mark')
+
+
 rule dates:
     # Get timespan for analysis
     input:
