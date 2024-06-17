@@ -2,12 +2,15 @@
 import warnings
 
 import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
 import pandas as pd
 from datetime import datetime
+
+from pipeline.reconstruct import hindcast_index, get_y, get_X
 from processing.bridge import datenum_to_datetime, datetime_to_datenum
 import seaborn as sns
+
+from processing.recomposition import component_frequencies
 
 
 def _mask_datetime(df, start, end):
@@ -136,5 +139,93 @@ def fig4(shore: pd.Series, imf_predictions: pd.Series, start: datetime, end: dat
         sns.lineplot(x=s0.index, y=s0, ax=axes, color='black')
         sns.lineplot(x=p0.index, y=p0, ax=axes, color='red')
         axes.set(xlabel='Date', ylabel='Shoreline (m)')
+
+    return fig
+
+
+def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
+            coeffs: dict[str, np.ndarray]) -> plt.Figure:
+    """SI fig 3: matrix of driver components contributing to signal components"""
+    # Set up a plot grid, with an extra cols for summation arrows + result column
+    num_components = len(imfs[signal].columns)
+    num_drivers = len(imfs) - 1
+
+    grid = plt.GridSpec(num_components, num_drivers + 2, hspace=0.5)
+    fig = plt.figure(figsize=((num_drivers + 2) * 5, num_components * 5))
+    axs = [[None for j in range(num_drivers + 2)] for i in range(num_components)]
+
+    # Plot signal components
+    # TODO: sort drivers (requires saved coefficients to be labelled, rather than ordered)
+    drivers = set(imfs.keys()) - {signal}
+    # TODO: plot for training range, hindcast range, forecast?
+    index = hindcast_index(imfs, signal)
+    for i, component in enumerate(imfs[signal].columns):
+        X = get_X(imfs, nearest_freqs, signal, component, index)
+        y = get_y(imfs, signal, component, index)
+
+        # For each driver (column) and signal frequency (row)
+        c = 0
+        for j, driver in enumerate(drivers):
+            if driver in X.columns:
+                ax = plt.subplot(grid[i, j])
+                # Plot signal component
+                ax.plot(index, y, label='signal')
+                # Plot driver component
+                ax.plot(index, X[driver], label='driver', alpha=0.5)
+                # Plot prediction component, i.e.: driver * coefficient
+                ax.plot(index, coeffs[component][c] * X[driver], label='prediction', alpha=0.5)
+                axs[i][j] = ax
+                c += 0
+            else:
+                # Hide unused components
+                axs[i][j] = plt.subplot(grid[i, j])
+                axs[i][j].axis('off')
+
+    # Plot signal totals
+    for i, component in enumerate(imfs[signal].columns):
+        X = get_X(imfs, nearest_freqs, signal, component, index)
+        y = get_y(imfs, signal, component, index)
+
+        ax = plt.subplot(grid[i, num_drivers + 1])
+        ax.plot(index, y, label='signal')
+        ax.plot(index, np.sum([X[c] * coeffs[component][i]
+                   for i, c in enumerate(X.columns)], axis=0), label='prediction')
+        axs[i][num_drivers + 1] = ax
+
+        # Summation arrow
+        plt.annotate('', xy=(-0.3, 0.5), xycoords=ax,
+                     xytext=(1.2, 0.5), textcoords=axs[i][num_drivers - 1],
+                     arrowprops=dict(arrowstyle='simple,head_width=2.0,head_length=2.0', color='black'))
+
+    # TODO: check/test this:
+    # Label signal frequencies
+    frequencies = component_frequencies(imfs[signal])
+    period_days = 365 / frequencies
+    for i, period in enumerate(period_days):
+        plt.text(1.3, 0.5, f'{period:.2f} days', fontsize=40,
+                 horizontalalignment='center', verticalalignment='center', transform=axs[i][num_drivers + 1].transAxes)
+
+    # Label drivers
+    plt.text(0.5, 1.8, 'Drivers', fontsize=40,
+             horizontalalignment='center', verticalalignment='center', transform=axs[0][int((num_drivers + 2)/2)].transAxes)
+    for j, driver in enumerate(drivers):
+        plt.text(0.5, 1.2, driver, fontsize=40,
+                 horizontalalignment='center', verticalalignment='center', transform=axs[0][j].transAxes)
+    plt.text(0.5, 1.2, signal, fontsize=40,
+             horizontalalignment='center', verticalalignment='center', transform=axs[0][num_drivers + 1].transAxes)
+
+    # Label components
+    plt.text(-0.6, 0.5, 'Components', fontsize=40, rotation='vertical',
+             horizontalalignment='center', verticalalignment='center', transform=axs[int(num_components/2)][0].transAxes)
+    for i, component in enumerate(imfs[signal].columns):
+        plt.text(-0.3, 0.5, component, fontsize=40,
+                 horizontalalignment='center', verticalalignment='center', transform=axs[i][0].transAxes)
+
+    # Legend
+    handles, labels = axs[0][0].get_legend_handles_labels()
+    leg = fig.legend(handles, labels, loc='lower center',
+               fontsize=40)
+    for lh in leg.legendHandles:
+        lh.set_linewidth(8.0)
 
     return fig

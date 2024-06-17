@@ -108,7 +108,8 @@ rule fit:
         imfs=expand('data/{{folder}}/imfs/{label}_imf_{{noise}}.csv', label=input_columns),
         freqs='data/{folder}/nearest_frequencies_{noise}.csv'
     output:
-        'data/{folder}/coefficients_{noise}.json'
+        coeffs='data/{folder}/coefficients_{noise}.json',
+        figure='data/{folder}/figures/fit_matrix_{noise}.png'
     params:
         c=configuration
     script:
