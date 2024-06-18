@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from optimization import mreg2
+from processing.dataclasses import LinRegCoefficients
 
 
 def hindcast_index(imfs, signal):
@@ -23,7 +24,7 @@ def get_y(imfs, signal, component, hindcast_index):
     return imfs[signal].loc[hindcast_index, component]
 
 
-def fit(imfs, nearest_freqs, signal) -> dict[str, np.ndarray]:
+def fit(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str) -> LinRegCoefficients:
     index = hindcast_index(imfs, signal)
 
     output = {}
@@ -33,6 +34,6 @@ def fit(imfs, nearest_freqs, signal) -> dict[str, np.ndarray]:
 
         coefs = mreg2(y, X)
 
-        output[component] = coefs
+        output[component] = {label: coefs[i] for i, label in enumerate(X.columns)}
 
-    return output
+    return LinRegCoefficients(coeffs=output)  # TODO: handle intercept/normalize

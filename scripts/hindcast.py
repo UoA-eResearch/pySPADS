@@ -35,6 +35,7 @@ if __name__ == '__main__':
 
     # Replicate figures from paper
     f = paper.fig1(dfs['PC0'], dfs['Hs'], dfs['Tp'], dfs['Dir'], '2004-01-01', '2016-01-01')
+    (output_folder / 'figures').mkdir(parents=True, exist_ok=True)
     f.savefig(output_folder / 'figures' / 'fig1.png')
 
     # Perform decomposition (warning: takes ~4 hours)
@@ -95,8 +96,8 @@ if __name__ == '__main__':
         for component in output_columns:
             X = get_X(imfs_by_noise[noise], nearest_freqs[noise], signal, component, index)
 
-            pred = np.sum([X[c] * coefficients[noise][component][i]
-                           for i, c in enumerate(X.columns)], axis=0)
+            pred = np.sum([X[driver] * coefficients[noise].coeffs[component][driver]
+                           for driver in X.columns], axis=0)
             predictions.loc[:, component] = pred
 
         hindcast_df[noise] = predictions

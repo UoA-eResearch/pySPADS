@@ -17,6 +17,7 @@ def calc_SSE_all_Coef(theta: np.ndarray, S, PC):
 
 
 def mreg2(y, X):
+    # TODO: use intercept
     reg = LinearRegression().fit(X, y)
     bb = reg.coef_
 

@@ -1,6 +1,3 @@
-import json
-
-import numpy as np
 import pandas as pd
 
 from pipeline.reconstruct import fit
@@ -25,8 +22,7 @@ nearest_freq = pd.read_csv(snakemake.input.freqs, index_col=0)
 coeffs = fit(imfs, nearest_freq, signal)
 
 # Save
-with open(snakemake.output.coeffs, 'w') as f:
-    json.dump(coeffs, f, default=np.ndarray.tolist, indent=4)
+coeffs.save(snakemake.output.coeffs)
 
 # Debug figure
 # f = fit_plot_norm(imfs, nearest_freq, signal)

@@ -7,10 +7,11 @@ import pandas as pd
 from datetime import datetime
 
 from pipeline.reconstruct import hindcast_index, get_y, get_X
-from processing.bridge import datenum_to_datetime, datetime_to_datenum
+from processing.bridge import datenum_to_datetime
 import seaborn as sns
 import colorcet
 
+from processing.dataclasses import LinRegCoefficients
 from processing.recomposition import component_frequencies
 
 
@@ -145,7 +146,7 @@ def fig4(shore: pd.Series, imf_predictions: pd.Series, start: datetime, end: dat
 
 
 def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
-            coeffs: dict[str, np.ndarray], annotate_coeffs: bool = False) -> plt.Figure:
+            coeffs: LinRegCoefficients, annotate_coeffs: bool = False) -> plt.Figure:
     """SI fig 3: matrix of driver components contributing to signal components"""
     # Set up a plot grid, with an extra cols for summation arrows + result column
     num_components = len(imfs[signal].columns)
@@ -167,7 +168,6 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
         y = get_y(imfs, signal, component, index)
 
         # For each driver (column) and signal frequency (row)
-        c = 0
         for j, driver in enumerate(drivers):
             if driver in X.columns:
                 ax = plt.subplot(grid[i, j])
@@ -176,13 +176,12 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
                 # Plot driver component
                 ax.plot(index, X[driver], label='driver', alpha=0.5, color=cmap[1])
                 # Plot prediction component, i.e.: driver * coefficient
-                ax.plot(index, coeffs[component][c] * X[driver], label='prediction', alpha=0.5, color=cmap[2])
+                ax.plot(index, coeffs.coeffs[component][driver] * X[driver], label='prediction', alpha=0.5, color=cmap[2])
                 # Optionally annotate with coefficient
                 if annotate_coeffs:
-                    plt.text(0.5, -0.2, f'{coeffs[component][c]:.2f}x', fontsize=30,
+                    plt.text(0.5, -0.2, f'{coeffs.coeffs[component][driver]:.2f}x', fontsize=30,
                                 horizontalalignment='center', verticalalignment='top', transform=ax.transAxes)
                 axs[i][j] = ax
-                c += 1
             else:
                 # Hide unused components
                 axs[i][j] = plt.subplot(grid[i, j])
@@ -195,8 +194,8 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
 
         ax = plt.subplot(grid[i, num_drivers + 1])
         ax.plot(index, y, label='signal', color=cmap[0])
-        ax.plot(index, np.sum([X[c] * coeffs[component][i]
-                   for i, c in enumerate(X.columns)], axis=0),
+        ax.plot(index, np.sum([X[driver] * coeffs.coeffs[component][driver]
+                   for driver in X.columns], axis=0),
                 label='prediction', color=cmap[2], alpha=0.5)
         axs[i][num_drivers + 1] = ax
 

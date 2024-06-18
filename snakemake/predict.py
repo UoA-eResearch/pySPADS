@@ -6,6 +6,7 @@ from pathlib import Path
 
 from pipeline.reconstruct import get_X, get_y
 from processing.data import parse_filename, load_imf
+from processing.dataclasses import LinRegCoefficients
 
 # Parameters
 noise = float(snakemake.wildcards.noise)
@@ -29,9 +30,7 @@ for fname in snakemake.input.imfs:
 nearest_freq = pd.read_csv(snakemake.input.freqs, index_col=0)
 
 # Load coefficients
-with open(snakemake.input.coeffs, 'r') as f:
-    _coeffs = json.load(f)
-coeffs = {int(k): v for k, v in _coeffs.items()}  # Convert str keys to int
+coeffs = LinRegCoefficients.load(snakemake.input.coeffs)
 
 # Make predictions
 output_columns = imfs[signal].columns
@@ -41,8 +40,8 @@ predictions = pd.DataFrame(index=index, columns=output_columns)
 for component in output_columns:
     X = get_X(imfs, nearest_freq, signal, component, index)
 
-    pred = np.sum([X[c] * coeffs[component][i]
-                   for i, c in enumerate(X.columns)], axis=0)
+    pred = np.sum([X[driver] * coeffs.coeffs[component][driver]
+                   for driver in X.columns], axis=0)
     predictions.loc[:, component] = pred
 
     # Plot prediction vs. signal for debugging
