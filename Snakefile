@@ -2,7 +2,7 @@ def configuration(wildcards):
     import yaml
     from pathlib import Path
 
-    cfile = Path('data') / wildcards.folder / 'config.yaml'
+    cfile = Path('config.yaml')
     assert cfile.is_file(), f'Configuration file {cfile} not found'
 
     with open(cfile, 'r') as f:
@@ -11,16 +11,11 @@ def configuration(wildcards):
     return config
 
 
-def input_files(wildcards):
-    import glob
-    input_folder = f'data/{wildcards.folder}/input'
-    return glob.glob(input_folder + '/*.csv')
-
-
 def input_columns(wildcards):
     """Get all columns from all input files."""
     import pandas as pd
-    files = input_files(wildcards)
+    import glob
+    files = glob.glob('input/*.csv')
     columns = []
     for file in files:
         df = pd.read_csv(file)
@@ -38,10 +33,8 @@ def config_noises(wildcards):
     return config['noises']
 
 
-def expand_config(path, folder=None):
+def expand_config(path):
     def _expand(wildcards):
-        # if folder:
-        #     wildcards['folder'] = folder
         config = configuration(wildcards)
         return expand(path, **config)
 
@@ -51,28 +44,24 @@ def expand_config(path, folder=None):
 rule all_figures:
     input:
         # Fig 1
-        'data/{folder}/figures/paper_fig1.png',
+        'figures/paper_fig1.png',
         # Fig 2 (noises + mean)
-        expand('data/{{folder}}/figures/paper_fig2_{noise}.png', noise=config_noises),
-        'data/{folder}/figures/paper_fig2_mean.png',
+        expand('figures/paper_fig2_{noise}.png', noise=config_noises),
+        'figures/paper_fig2_mean.png',
         # Fig 3 (noises + mean)
-        expand('data/{{folder}}/figures/paper_fig3_{noise}.png', noise=config_noises),
-        'data/{folder}/figures/paper_fig3_mean.png',
+        expand('figures/paper_fig3_{noise}.png', noise=config_noises),
+        'figures/paper_fig3_mean.png',
         # Fig 4
-        'data/{folder}/figures/paper_fig4.png',
+        'figures/paper_fig4.png',
         # All imfs
-        expand('data/{{folder}}/figures/imfs/{label}_imf_{noise}.png', label=input_columns, noise=config_noises)
-    output:
-        # Fake output file in order to capture folder wildcard
-        touch('data/{folder}/figures/all_figures.mark')
-
+        expand('figures/imfs/{label}_imf_{noise}.png', label=input_columns, noise=config_noises)
 
 rule dates:
     # Get timespan for analysis
     input:
-        folder='data/{folder}/input'
+        folder='input'
     output:
-        'data/{folder}/dates.json'
+        'dates.json'
     params:
         c=configuration
     script:
@@ -82,10 +71,10 @@ rule dates:
 rule decompose:
     # Decompose each channel into IMFs
     input:
-        folder='data/{folder}/input',
-        dates='data/{folder}/dates.json'
+        folder='input',
+        dates='dates.json'
     output:
-        'data/{folder}/imfs/{label}_imf_{noise}.csv'
+        'imfs/{label}_imf_{noise}.csv'
     params:
         c=configuration
     script:
@@ -94,9 +83,9 @@ rule decompose:
 rule nearest_freq:
     # Find nearest frequencies in drivers to each signal IMF
     input:
-        expand('data/{{folder}}/imfs/{label}_imf_{{noise}}.csv', label=input_columns)
+        expand('imfs/{label}_imf_{{noise}}.csv', label=input_columns)
     output:
-        'data/{folder}/nearest_frequencies_{noise}.csv'
+        'nearest_frequencies_{noise}.csv'
     params:
         c=configuration
     script:
@@ -105,11 +94,11 @@ rule nearest_freq:
 rule fit:
     # Fit a model to each signal IMF
     input:
-        imfs=expand('data/{{folder}}/imfs/{label}_imf_{{noise}}.csv', label=input_columns),
-        freqs='data/{folder}/nearest_frequencies_{noise}.csv'
+        imfs=expand('imfs/{label}_imf_{{noise}}.csv', label=input_columns),
+        freqs='nearest_frequencies_{noise}.csv'
     output:
-        coeffs='data/{folder}/coefficients_{noise}.json',
-        figure='data/{folder}/figures/fit_matrix_{noise}.png'
+        coeffs='coefficients_{noise}.json',
+        figure='figures/fit_matrix_{noise}.png'
     params:
         c=configuration
     script:
@@ -118,12 +107,12 @@ rule fit:
 rule predict:
     # Predict each signal IMF
     input:
-        imfs=expand('data/{{folder}}/imfs/{label}_imf_{{noise}}.csv', label=input_columns),
-        freqs='data/{folder}/nearest_frequencies_{noise}.csv',
-        coeffs='data/{folder}/coefficients_{noise}.json',
-        dates='data/{folder}/dates.json'
+        imfs=expand('imfs/{label}_imf_{{noise}}.csv', label=input_columns),
+        freqs='nearest_frequencies_{noise}.csv',
+        coeffs='coefficients_{noise}.json',
+        dates='dates.json'
     output:
-        'data/{folder}/predictions_{noise}.csv'
+        'predictions_{noise}.csv'
     params:
         c=configuration
     script:
@@ -132,9 +121,9 @@ rule predict:
 rule combine_preds:
     # Combine all predictions
     input:
-        expand('data/{{folder}}/predictions_{noise}.csv', noise=config_noises)
+        expand('predictions_{noise}.csv', noise=config_noises)
     output:
-        'data/{folder}/predictions.csv'
+        'predictions.csv'
     params:
         c=configuration
     script:
@@ -143,18 +132,18 @@ rule combine_preds:
 # Visualisation
 rule plot_imf:
     input:
-        imf='data/{folder}/imfs/{label}_imf_{noise}.csv'
+        imf='imfs/{label}_imf_{noise}.csv'
     output:
-        'data/{folder}/figures/imfs/{label}_imf_{noise}.png'
+        'figures/imfs/{label}_imf_{noise}.png'
     script:
         'snakemake/plot_imf.py'
 
 # Paper figures
 rule paper_fig1:
     input:
-        folder='data/{folder}/input'
+        folder='input'
     output:
-        'data/{folder}/figures/paper_fig1.png'
+        'figures/paper_fig1.png'
     params:
         c=configuration
     script:
@@ -162,10 +151,10 @@ rule paper_fig1:
 
 rule paper_fig2:
     input:
-        folder='data/{folder}/input',
-        signal_imfs=expand_config('data/{{folder}}/imfs/{signal}_imf_{noises}.csv')
+        folder='input',
+        signal_imfs=expand_config('imfs/{signal}_imf_{noises}.csv')
     output:
-        'data/{folder}/figures/paper_fig2_{noise}.png',
+        'figures/paper_fig2_{noise}.png',
     params:
         c=configuration
     script:
@@ -173,9 +162,9 @@ rule paper_fig2:
 
 rule paper_fig3:
     input:
-        imfs = expand('data/{{folder}}/imfs/{label}_imf_{{noise}}.csv', label=input_columns),
+        imfs = expand('imfs/{label}_imf_{{noise}}.csv', label=input_columns),
     output:
-        'data/{folder}/figures/paper_fig3_{noise}.png',
+        'figures/paper_fig3_{noise}.png',
     params:
         c=configuration
     wildcard_constraints:
@@ -185,9 +174,9 @@ rule paper_fig3:
 
 rule paper_fig3_mean:
     input:
-        imfs=expand('data/{{folder}}/imfs/{label}_imf_{noise}.csv', label=input_columns, noise=config_noises),
+        imfs=expand('imfs/{label}_imf_{noise}.csv', label=input_columns, noise=config_noises),
     output:
-        'data/{folder}/figures/paper_fig3_{noise}.png',
+        'figures/paper_fig3_{noise}.png',
     params:
         c=configuration
     wildcard_constraints:
@@ -197,10 +186,10 @@ rule paper_fig3_mean:
 
 rule paper_fig4:
     input:
-        folder='data/{folder}/input',
-        predictions='data/{folder}/predictions.csv'
+        folder='input',
+        predictions='predictions.csv'
     output:
-        'data/{folder}/figures/paper_fig4.png'
+        'figures/paper_fig4.png'
     params:
         c=configuration
     script:
