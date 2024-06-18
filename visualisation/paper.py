@@ -9,6 +9,7 @@ from datetime import datetime
 from pipeline.reconstruct import hindcast_index, get_y, get_X
 from processing.bridge import datenum_to_datetime, datetime_to_datenum
 import seaborn as sns
+import colorcet
 
 from processing.recomposition import component_frequencies
 
@@ -144,7 +145,7 @@ def fig4(shore: pd.Series, imf_predictions: pd.Series, start: datetime, end: dat
 
 
 def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
-            coeffs: dict[str, np.ndarray]) -> plt.Figure:
+            coeffs: dict[str, np.ndarray], annotate_coeffs: bool = False) -> plt.Figure:
     """SI fig 3: matrix of driver components contributing to signal components"""
     # Set up a plot grid, with an extra cols for summation arrows + result column
     num_components = len(imfs[signal].columns)
@@ -153,6 +154,8 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
     grid = plt.GridSpec(num_components, num_drivers + 2, hspace=0.5)
     fig = plt.figure(figsize=((num_drivers + 2) * 5, num_components * 5))
     axs = [[None for j in range(num_drivers + 2)] for i in range(num_components)]
+
+    cmap = colorcet.glasbey_hv
 
     # Plot signal components
     # TODO: sort drivers (requires saved coefficients to be labelled, rather than ordered)
@@ -169,13 +172,17 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
             if driver in X.columns:
                 ax = plt.subplot(grid[i, j])
                 # Plot signal component
-                ax.plot(index, y, label='signal')
+                ax.plot(index, y, label='signal', color=cmap[0])
                 # Plot driver component
-                ax.plot(index, X[driver], label='driver', alpha=0.5)
+                ax.plot(index, X[driver], label='driver', alpha=0.5, color=cmap[1])
                 # Plot prediction component, i.e.: driver * coefficient
-                ax.plot(index, coeffs[component][c] * X[driver], label='prediction', alpha=0.5)
+                ax.plot(index, coeffs[component][c] * X[driver], label='prediction', alpha=0.5, color=cmap[2])
+                # Optionally annotate with coefficient
+                if annotate_coeffs:
+                    plt.text(0.5, -0.2, f'{coeffs[component][c]:.2f}x', fontsize=30,
+                                horizontalalignment='center', verticalalignment='top', transform=ax.transAxes)
                 axs[i][j] = ax
-                c += 0
+                c += 1
             else:
                 # Hide unused components
                 axs[i][j] = plt.subplot(grid[i, j])
@@ -187,9 +194,10 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
         y = get_y(imfs, signal, component, index)
 
         ax = plt.subplot(grid[i, num_drivers + 1])
-        ax.plot(index, y, label='signal')
+        ax.plot(index, y, label='signal', color=cmap[0])
         ax.plot(index, np.sum([X[c] * coeffs[component][i]
-                   for i, c in enumerate(X.columns)], axis=0), label='prediction')
+                   for i, c in enumerate(X.columns)], axis=0),
+                label='prediction', color=cmap[2], alpha=0.5)
         axs[i][num_drivers + 1] = ax
 
         # Summation arrow
@@ -202,15 +210,19 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
              horizontalalignment='left', verticalalignment='center', rotation=-90,
              transform=axs[int(num_components/2)][num_drivers + 1].transAxes)
     frequencies = component_frequencies(imfs[signal])
-    period_days = 365 / frequencies
+    component_period_days = 365 / frequencies
+    max_period_yrs = (imfs[signal].index.max() - imfs[signal].index.min()).days / 365
+
     def _format_period(period):
         if period < 1:
             return f'{period * 24:.1f} hours'
+        elif np.isinf(period):
+            return f'>{max_period_yrs:.1f} years'
         elif period > 365:
             return f'{period/365:.1f} years'
         return f'{period:.1f} days'
 
-    for i, period in enumerate(period_days):
+    for i, period in enumerate(component_period_days):
         plt.text(1.3, 0.5, _format_period(period), fontsize=40,
                  horizontalalignment='left', verticalalignment='center', transform=axs[i][num_drivers + 1].transAxes)
 
@@ -233,7 +245,7 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
     # Legend
     handles, labels = axs[0][0].get_legend_handles_labels()
     leg = fig.legend(handles, labels, loc='lower center',
-               fontsize=40)
+               fontsize=40, ncol=3)
     for lh in leg.legendHandles:
         lh.set_linewidth(8.0)
 
