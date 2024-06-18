@@ -197,29 +197,38 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
                      xytext=(1.2, 0.5), textcoords=axs[i][num_drivers - 1],
                      arrowprops=dict(arrowstyle='simple,head_width=2.0,head_length=2.0', color='black'))
 
-    # TODO: check/test this:
-    # Label signal frequencies
+    # Label signal periods
+    plt.text(2.5, 0.5, 'component period', fontsize=40,
+             horizontalalignment='left', verticalalignment='center', rotation=-90,
+             transform=axs[int(num_components/2)][num_drivers + 1].transAxes)
     frequencies = component_frequencies(imfs[signal])
     period_days = 365 / frequencies
+    def _format_period(period):
+        if period < 1:
+            return f'{period * 24:.1f} hours'
+        elif period > 365:
+            return f'{period/365:.1f} years'
+        return f'{period:.1f} days'
+
     for i, period in enumerate(period_days):
-        plt.text(1.3, 0.5, f'{period:.2f} days', fontsize=40,
-                 horizontalalignment='center', verticalalignment='center', transform=axs[i][num_drivers + 1].transAxes)
+        plt.text(1.3, 0.5, _format_period(period), fontsize=40,
+                 horizontalalignment='left', verticalalignment='center', transform=axs[i][num_drivers + 1].transAxes)
 
     # Label drivers
     plt.text(0.5, 1.8, 'Drivers', fontsize=40,
              horizontalalignment='center', verticalalignment='center', transform=axs[0][int((num_drivers + 2)/2)].transAxes)
     for j, driver in enumerate(drivers):
-        plt.text(0.5, 1.2, driver, fontsize=40,
-                 horizontalalignment='center', verticalalignment='center', transform=axs[0][j].transAxes)
-    plt.text(0.5, 1.2, signal, fontsize=40,
-             horizontalalignment='center', verticalalignment='center', transform=axs[0][num_drivers + 1].transAxes)
+        plt.text(0.5, 1.15, driver, fontsize=40,
+                 horizontalalignment='center', verticalalignment='bottom', transform=axs[0][j].transAxes)
+    plt.text(0.5, 1.15, signal, fontsize=40,
+             horizontalalignment='center', verticalalignment='bottom', transform=axs[0][num_drivers + 1].transAxes)
 
     # Label components
     plt.text(-0.6, 0.5, 'Components', fontsize=40, rotation='vertical',
              horizontalalignment='center', verticalalignment='center', transform=axs[int(num_components/2)][0].transAxes)
     for i, component in enumerate(imfs[signal].columns):
         plt.text(-0.3, 0.5, component, fontsize=40,
-                 horizontalalignment='center', verticalalignment='center', transform=axs[i][0].transAxes)
+                 horizontalalignment='right', verticalalignment='center', transform=axs[i][0].transAxes)
 
     # Legend
     handles, labels = axs[0][0].get_legend_handles_labels()
