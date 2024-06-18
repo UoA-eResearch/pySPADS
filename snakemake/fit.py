@@ -26,5 +26,5 @@ coeffs.save(snakemake.output.coeffs)
 
 # Debug figure
 # f = fit_plot_norm(imfs, nearest_freq, signal)
-f = fig_si3(imfs, nearest_freq, signal, coeffs)
+f = fig_si3(imfs, nearest_freq, signal, coeffs, annotate_coeffs=True)
 f.savefig(snakemake.output.figure)

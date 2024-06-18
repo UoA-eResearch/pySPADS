@@ -159,8 +159,7 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
     cmap = colorcet.glasbey_hv
 
     # Plot signal components
-    # TODO: sort drivers (requires saved coefficients to be labelled, rather than ordered)
-    drivers = set(imfs.keys()) - {signal}
+    drivers = sorted(list(set(imfs.keys()) - {signal}))
     # TODO: plot for training range, hindcast range, forecast?
     index = hindcast_index(imfs, signal)
     for i, component in enumerate(imfs[signal].columns):

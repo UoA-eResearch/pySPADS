@@ -53,6 +53,8 @@ rule all_figures:
         'figures/paper_fig3_mean.png',
         # Fig 4
         'figures/paper_fig4.png',
+        # SI Fig 3
+        expand('figures/fit_matrix_{noise}.png', noise=config_noises),
         # All imfs
         expand('figures/imfs/{label}_imf_{noise}.png', label=input_columns, noise=config_noises)
 
