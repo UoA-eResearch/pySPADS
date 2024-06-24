@@ -62,11 +62,19 @@ def load_data_from_csvs(path: Path, time_col: str = 't') -> dict[str, pd.Series]
 
     if path.is_dir():
         # Load all csv files in directory
-        dfs = [pd.read_csv(file, parse_dates=[time_col]).set_index(time_col)
+        dfs = [pd.read_csv(file, parse_dates=[time_col])
                for file in path.glob('*.csv')]
     else:
         # Load single csv file
-        dfs = [pd.read_csv(path, parse_dates=[time_col]).set_index(time_col)]
+        dfs = [pd.read_csv(path, parse_dates=[time_col])]
+
+    for i, df in enumerate(dfs):
+        # Cast time_col to date, so that default daily interval lines up
+        # TODO: handle non-daily intervals
+        df[time_col] = df[time_col].dt.date
+
+        # Remove duplicates, keeping mean value per day, and set as index
+        dfs[i] = df.groupby(time_col).mean()
 
     # Interpolate to regular time intervals
     dfs = [_interpolate(df) for df in dfs]
