@@ -99,8 +99,7 @@ def imf_filename(output_dir: Path, label: str, noise: float) -> Path:
     if isinstance(output_dir, str):
         output_dir = Path(output_dir)
 
-    noise_str = f'{noise:.3f}'.replace('.', '_')
-    return output_dir / f'{label}_imf_{noise_str}.csv'
+    return output_dir / f'{label}_imf_{noise}.csv'
 
 
 def parse_filename(filename: Path) -> tuple[str, float]:
@@ -109,5 +108,5 @@ def parse_filename(filename: Path) -> tuple[str, float]:
         filename = Path(filename)
 
     label, noise_str = filename.stem.split('_imf_')
-    noise = float(noise_str.replace('_', '.'))
+    noise = float(noise_str)
     return label, noise
