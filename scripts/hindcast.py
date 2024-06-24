@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from pipeline.decompose import decompose
+from pipeline.decompose import decompose, reject_noise
 from pipeline.frequencies import match_frequencies
 from pipeline.reconstruct import fit, hindcast_index, get_X
 from processing.data import load_data_from_csvs, imf_filename, load_imfs
@@ -59,6 +59,11 @@ if __name__ == '__main__':
 
     ## Match input frequencies to driver frequencies
     imfs = load_imfs(imf_dir)
+
+    # Drop IMF modes that are mostly noise
+    for label, imf_df in imfs.items():
+        imfs[label] = reject_noise(imf_df, noise_threshold=0.95)
+
 
     # TODO - check which noise value to use
     f = paper.fig2(dfs[signal], imfs[(signal, 0.1)], '1999-01-01', '2017-01-01')
