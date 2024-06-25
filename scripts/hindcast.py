@@ -26,6 +26,7 @@ if __name__ == '__main__':
     signal = 'shore'
     noises = [0.1, 0.2, 0.3, 0.4, 0.5]
     frequency_threshold = 0.25
+    noise_threshold = 0.95
 
     # decompose from earliest available date to latest date available for all input data
     start_date = min([min(df.index) for df in dfs.values()])
@@ -34,9 +35,10 @@ if __name__ == '__main__':
     hindcast_date = pd.Timestamp('2012-01-01')
 
     # Replicate figures from paper
-    f = paper.fig1(dfs['PC0'], dfs['Hs'], dfs['Tp'], dfs['Dir'], '2004-01-01', '2016-01-01')
     (output_folder / 'figures').mkdir(parents=True, exist_ok=True)
-    f.savefig(output_folder / 'figures' / 'fig1.png')
+    # Skip figure 1 if missing PCA data
+    # f = paper.fig1(dfs['PC0'], dfs['Hs'], dfs['Tp'], dfs['Dir'], '2004-01-01', '2016-01-01')
+    # f.savefig(output_folder / 'figures' / 'fig1.png')
 
     # Perform decomposition (warning: takes ~4 hours)
     imf_dir = output_folder / 'imfs'
@@ -62,8 +64,7 @@ if __name__ == '__main__':
 
     # Drop IMF modes that are mostly noise
     for label, imf_df in imfs.items():
-        imfs[label] = reject_noise(imf_df, noise_threshold=0.95)
-
+        imfs[label] = reject_noise(imf_df, noise_threshold=noise_threshold)
 
     # TODO - check which noise value to use
     f = paper.fig2(dfs[signal], imfs[(signal, 0.1)], '1999-01-01', '2017-01-01')
@@ -76,8 +77,9 @@ if __name__ == '__main__':
             imfs_by_noise[noise] = {}
         imfs_by_noise[noise][label] = imfs[(label, noise)]
 
-    f = paper.fig3(imfs_by_noise[0.1], signal, '1999-01-01', '2017-01-01')
-    f.savefig(output_folder / 'figures' / 'fig3.png')
+    # Skip figure 3 if missing PCA data
+    # f = paper.fig3(imfs_by_noise[0.1], f'{signal}_full', '1999-01-01', '2017-01-01')
+    # f.savefig(output_folder / 'figures' / 'fig3.png')
 
     nearest_freqs = {}
     for noise in imfs_by_noise:
@@ -88,9 +90,14 @@ if __name__ == '__main__':
     ## Reconstruct signal (including hindcast) from drivers
     # Linear regression of decomposed drivers to decomposed signal
     coefficients = {
-        noise: fit(imfs_by_noise[noise], nearest_freqs[noise], signal)
+        noise: fit(imfs_by_noise[noise], nearest_freqs[noise], signal, model='ridge', fit_intercept=True)
         for noise in imfs_by_noise
     }
+
+    # SI 3 figure
+    for noise in imfs_by_noise:
+        f = paper.fig_si3(imfs_by_noise[noise], nearest_freqs[noise], signal, coefficients[noise], annotate_coeffs=True)
+        f.savefig(output_folder / 'figures' / f'fig_si3_{noise}.png')
 
     hindcast_df = {}
     for noise in imfs_by_noise:
