@@ -30,8 +30,9 @@ def fig1(pc0: pd.Series, Hs: pd.Series, Tp: pd.Series, Dir: pd.Series,
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=FutureWarning)
-        d0 = _mask_datetime(pc0, start, end)
-        sns.scatterplot(x=d0.index, y=d0, ax=axes[0], s=2)
+        if pc0 is not None:
+            d0 = _mask_datetime(pc0, start, end)
+            sns.scatterplot(x=d0.index, y=d0, ax=axes[0], s=2)
         axes[0].set(ylabel='PC1 [m]')
 
         d1 = _mask_datetime(Hs, start, end)
@@ -111,18 +112,20 @@ def fig3(all_imfs: dict[str, pd.DataFrame], signal_col: str, start: datetime, en
         ax1.set(ylabel='IMF_Hs[m]')
 
         s2 = _mask_datetime(all_imfs[signal_col][8], start, end)
-        d2 = _mask_datetime(all_imfs['PC1'][8], start, end)
         sns.lineplot(x=s2.index, y=s2, ax=axes[2], color='red')
         ax2 = axes[2].twinx()
-        sns.lineplot(x=d2.index, y=d2, ax=ax2, color='cyan')
+        if 'PC1' in all_imfs:
+            d2 = _mask_datetime(all_imfs['PC1'][8], start, end)
+            sns.lineplot(x=d2.index, y=d2, ax=ax2, color='cyan')
         axes[2].set(ylabel='IMF_S[m]')
         ax2.set(ylabel='IMF_PC1[m]')
 
         s3 = _mask_datetime(all_imfs[signal_col][8], start, end)
-        d3 = _mask_datetime(all_imfs['PC1'].sum(axis=1), start, end)
         sns.scatterplot(x=s3.index, y=s3, ax=axes[3], color='black', s=2)
         ax3 = axes[3].twinx()
-        sns.lineplot(x=d3.index, y=d3, ax=ax3, color='cyan')
+        if 'PC1' in all_imfs:
+            d3 = _mask_datetime(all_imfs['PC1'].sum(axis=1), start, end)
+            sns.lineplot(x=d3.index, y=d3, ax=ax3, color='cyan')
         axes[3].set(ylabel='SOI', xlabel='Time[yr]')
         ax3.set(ylabel='IMF_PC1[m]')
 
@@ -140,12 +143,16 @@ def fig4(signal: pd.Series, imf_predictions: pd.Series, start: datetime, end: da
         fit_data = _mask_datetime(imf_predictions, start, hindcast_date)
         predict_data = _mask_datetime(imf_predictions, hindcast_date, end)
         # TODO: plot error bounds from multiple noises
-        sns.lineplot(x=signal_data.index, y=signal_data, ax=axes, color='black')
-        sns.lineplot(x=fit_data.index, y=fit_data, ax=axes, color='blue')
-        sns.lineplot(x=predict_data.index, y=predict_data, ax=axes, color='red')
+        sns.lineplot(x=signal_data.index, y=signal_data, ax=axes, color='black', label='Signal')
+        sns.lineplot(x=fit_data.index, y=fit_data, ax=axes, color='blue', label='Fit')
+        sns.lineplot(x=predict_data.index, y=predict_data, ax=axes, color='red', label='Hindcast')
         axes.set(xlabel='Date', ylabel='Shoreline (m)')
 
-        axes.legend(['Signal', 'Fit', 'Predict'], loc='upper right')
+    # Legend
+    handles, labels = axes.get_legend_handles_labels()
+    leg = fig.legend(handles, labels, loc='upper right')
+    for lh in leg.legendHandles:
+        lh.set_linewidth(4.0)
 
     return fig
 
