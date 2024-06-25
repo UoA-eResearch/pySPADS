@@ -1,5 +1,7 @@
 import json
 
+import numpy as np
+import pandas as pd
 from pydantic import BaseModel
 from typing import Optional
 
@@ -26,3 +28,11 @@ class LinRegCoefficients(SaveLoadBaseModel):
     normalize: bool = False
     coeffs: dict[int, dict[str, float]]  # {component: {driver: coefficient}}
     intercepts: Optional[dict[int, float]] = None  # {component: intercept}
+
+    def predict(self, component: int, X: dict[str: pd.DataFrame]) -> pd.DataFrame:
+        if self.use_intercept:
+            return self.intercepts[component] + np.sum(
+                [X[driver] * self.coeffs[component][driver] for driver in X.columns], axis=0
+            )
+        else:
+            return np.sum([X[driver] * self.coeffs[component][driver] for driver in X.columns], axis=0)

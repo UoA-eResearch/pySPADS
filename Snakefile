@@ -41,6 +41,8 @@ def expand_config(path):
     return _expand
 
 
+models = ['mreg2', 'mreg2_intercept', 'linreg', 'linreg_intercept', 'ridge', 'ridge_intercept']
+
 rule all_figures:
     input:
         # Fig 1
@@ -52,9 +54,9 @@ rule all_figures:
         expand('figures/paper_fig3_{noise}.png', noise=config_noises),
         'figures/paper_fig3_mean.png',
         # Fig 4
-        'figures/paper_fig4.png',
+        expand('figures/paper_{model}_fig4.png', model=models),
         # SI Fig 3
-        expand('figures/fit_matrix_{noise}.png', noise=config_noises),
+        expand('figures/fit_matrix_{model}_{noise}.png', noise=config_noises, model=models),
         # All imfs
         expand('figures/imfs/{label}_imf_{noise}.png', label=input_columns, noise=config_noises)
 
@@ -99,8 +101,8 @@ rule fit:
         imfs=expand('imfs/{label}_imf_{{noise}}.csv', label=input_columns),
         freqs='nearest_frequencies_{noise}.csv'
     output:
-        coeffs='coefficients_{noise}.json',
-        figure='figures/fit_matrix_{noise}.png'
+        coeffs='{model}/coefficients_{noise}.json',
+        figure='figures/fit_matrix_{model}_{noise}.png'
     params:
         c=configuration
     script:
@@ -111,10 +113,10 @@ rule predict:
     input:
         imfs=expand('imfs/{label}_imf_{{noise}}.csv', label=input_columns),
         freqs='nearest_frequencies_{noise}.csv',
-        coeffs='coefficients_{noise}.json',
+        coeffs='{model}/coefficients_{noise}.json',
         dates='dates.json'
     output:
-        'predictions_{noise}.csv'
+        '{model}/predictions_{noise}.csv'
     params:
         c=configuration
     script:
@@ -123,9 +125,9 @@ rule predict:
 rule combine_preds:
     # Combine all predictions
     input:
-        expand('predictions_{noise}.csv', noise=config_noises)
+        expand('{{model}}/predictions_{noise}.csv', noise=config_noises)
     output:
-        'predictions.csv'
+        '{model}/predictions.csv'
     params:
         c=configuration
     script:
@@ -189,9 +191,9 @@ rule paper_fig3_mean:
 rule paper_fig4:
     input:
         folder='input',
-        predictions='predictions.csv'
+        predictions='{model}/predictions.csv'
     output:
-        'figures/paper_fig4.png'
+        'figures/paper_{model}_fig4.png'
     params:
         c=configuration
     script:

@@ -1,6 +1,5 @@
 import json
 from matplotlib import pyplot as plt
-import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -40,8 +39,9 @@ predictions = pd.DataFrame(index=index, columns=output_columns)
 for component in output_columns:
     X = get_X(imfs, nearest_freq, signal, component, index)
 
-    pred = np.sum([X[driver] * coeffs.coeffs[component][driver]
-                   for driver in X.columns], axis=0)
+    pred = coeffs.predict(component, X)
+    # pred = np.sum([X[driver] * coeffs.coeffs[component][driver]
+    #                for driver in X.columns], axis=0)
     predictions.loc[:, component] = pred
 
     # Plot prediction vs. signal for debugging

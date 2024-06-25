@@ -8,6 +8,11 @@ from visualisation.paper import fig_si3
 noise = float(snakemake.wildcards.noise)
 signal = snakemake.params.c['signal']
 
+model = snakemake.wildcards.model
+fit_intercept = '_intercept' in model
+if fit_intercept:
+    model = model.replace('_intercept', '')
+
 # Load imfs
 imfs = {}
 for fname in snakemake.input.imfs:
@@ -19,7 +24,7 @@ for fname in snakemake.input.imfs:
 nearest_freq = pd.read_csv(snakemake.input.freqs, index_col=0)
 
 # Linear regression
-coeffs = fit(imfs, nearest_freq, signal)
+coeffs = fit(imfs, nearest_freq, signal, model=model, fit_intercept=fit_intercept)
 
 # Save
 coeffs.save(snakemake.output.coeffs)

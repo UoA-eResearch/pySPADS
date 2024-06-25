@@ -193,8 +193,7 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
 
         ax = plt.subplot(grid[i, num_drivers + 1])
         ax.plot(index, y, label='signal', color=cmap[0])
-        ax.plot(index, np.sum([X[driver] * coeffs.coeffs[component][driver]
-                   for driver in X.columns], axis=0),
+        ax.plot(index, coeffs.predict(component, X),
                 label='prediction', color=cmap[2], alpha=0.5)
         axs[i][num_drivers + 1] = ax
 
