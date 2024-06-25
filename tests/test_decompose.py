@@ -57,7 +57,7 @@ class Test(TestCase):
         # Use only a small amount of data for testing
         data = data[:1000]
 
-        imf_df = decompose(data, noise=0.1, NR=100, progress=False)
+        imf_df = decompose(data, noise=0.1, num_trials=100, progress=False, parallel=False)
 
         self.assertTrue(all(imf_df.index == data.index))
         # Expect column headers to be integer 0, 1, ...
@@ -69,15 +69,15 @@ class Test(TestCase):
         output_dir = ROOT_DIR / 'data' / 'imfs'
 
         filename = imf_filename(output_dir, 'shore', 0.1)
-        self.assertEqual(filename, output_dir / 'shore_imf_0_100.csv')
+        self.assertEqual(filename, output_dir / 'shore_imf_0.1.csv')
 
         # Check expected noise precision
         filename = imf_filename(output_dir, 'shore', 0.123456789)
-        self.assertEqual(filename, output_dir / 'shore_imf_0_123.csv')
+        self.assertEqual(filename, output_dir / 'shore_imf_0.123456789.csv')
 
     def test_parse_filaname(self):
         """Check that the filename is parsed correctly"""
-        filename = ROOT_DIR / 'data' / 'imfs' / 'shore_imf_0_100.csv'
+        filename = ROOT_DIR / 'data' / 'imfs' / 'shore_imf_0.1.csv'
         label, noise = parse_filename(filename)
 
         self.assertEqual(label, 'shore')
@@ -90,4 +90,4 @@ class Test(TestCase):
             filename = imf_filename(ROOT_DIR / 'data' / 'imfs', label, noise)
             parsed_label, parsed_noise = parse_filename(filename)
             self.assertEqual(label, parsed_label)
-            self.assertEqual(round(noise, 3), parsed_noise)
+            self.assertEqual(noise, parsed_noise)

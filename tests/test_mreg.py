@@ -50,7 +50,7 @@ def test_mreg_no_intercept(test_data):
         assert np.isclose(_coeffs[i], coeffs[i], rtol=1e-1, atol=1e-1)
 
 
-@skip("mreg does not work well with intercept")
+# @skip("mreg does not work well with intercept")
 @given(coeffs_signals_drivers(include_intercept=True))
 def test_mreg_with_intercept(test_data):
     intercept, coeffs, drivers_df, signal_sr = test_data

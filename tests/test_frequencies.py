@@ -19,5 +19,5 @@ class Test(TestCase):
         for label in expected_series:
             key = (label, 0.1)  # include noise value
             self.assertTrue(key in imfs)
-            self.assertTrue(imfs[key].index.inferred_type == 'integer')
+            self.assertTrue(imfs[key].index.inferred_type == 'datetime64')
             self.assertTrue(imfs[key].columns.inferred_type == 'integer')
