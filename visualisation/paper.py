@@ -129,18 +129,23 @@ def fig3(all_imfs: dict[str, pd.DataFrame], signal_col: str, start: datetime, en
     return fig
 
 
-def fig4(shore: pd.Series, imf_predictions: pd.Series, start: datetime, end: datetime):
+def fig4(signal: pd.Series, imf_predictions: pd.Series, start: datetime, end: datetime, hindcast_date: datetime):
     """Figure 4: Shoreline predictions"""
     fig, axes = plt.subplots(1, 1, figsize=(10, 5))
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=FutureWarning)
 
-        s0 = _mask_datetime(shore, start, end)
-        p0 = _mask_datetime(imf_predictions, start, end)
-        sns.lineplot(x=s0.index, y=s0, ax=axes, color='black')
-        sns.lineplot(x=p0.index, y=p0, ax=axes, color='red')
+        signal_data = _mask_datetime(signal, start, end)
+        fit_data = _mask_datetime(imf_predictions, start, hindcast_date)
+        predict_data = _mask_datetime(imf_predictions, hindcast_date, end)
+        # TODO: plot error bounds from multiple noises
+        sns.lineplot(x=signal_data.index, y=signal_data, ax=axes, color='black')
+        sns.lineplot(x=fit_data.index, y=fit_data, ax=axes, color='blue')
+        sns.lineplot(x=predict_data.index, y=predict_data, ax=axes, color='red')
         axes.set(xlabel='Date', ylabel='Shoreline (m)')
+
+        axes.legend(['Signal', 'Fit', 'Predict'], loc='upper right')
 
     return fig
 

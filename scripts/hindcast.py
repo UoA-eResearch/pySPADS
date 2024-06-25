@@ -116,6 +116,5 @@ if __name__ == '__main__':
     total = sum(list(by_noise_df.values())) / len(by_noise_df)
     total.to_csv(output_folder / 'reconstructed_total_df.csv')
 
-    # TODO - test this, total may not be the right structure
-    f = paper.fig4(dfs[signal], total, '2010-01-01', '2017-01-01')
+    f = paper.fig4(dfs[signal], total, '2010-01-01', '2017-01-01', hindcast_date)
     f.savefig(output_folder / 'figures' / 'fig4.png')

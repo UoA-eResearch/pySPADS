@@ -191,7 +191,8 @@ rule paper_fig3_mean:
 rule paper_fig4:
     input:
         folder='input',
-        predictions='{model}/predictions.csv'
+        predictions='{model}/predictions.csv',
+        dates='dates.json'
     output:
         'figures/paper_{model}_fig4.png'
     params:
