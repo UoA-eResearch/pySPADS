@@ -108,8 +108,7 @@ if __name__ == '__main__':
         for component in output_columns:
             X = get_X(imfs_by_noise[noise], nearest_freqs[noise], signal, component, index)
 
-            pred = np.sum([X[driver] * coefficients[noise].coeffs[component][driver]
-                           for driver in X.columns], axis=0)
+            pred = coefficients[noise].predict(component, X)
             predictions.loc[:, component] = pred
 
         hindcast_df[noise] = predictions
