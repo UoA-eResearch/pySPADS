@@ -60,7 +60,8 @@ def fig2(shore: pd.Series, shore_imf: pd.DataFrame, start: datetime, end: dateti
         warnings.simplefilter("ignore", category=FutureWarning)
 
         output = _mask_datetime(shore, start, end)
-        trend = _mask_datetime(shore_imf[len(shore_imf.columns)-1], start, end)
+        trend_col = shore_imf.columns[-1]
+        trend = _mask_datetime(shore_imf[trend_col], start, end)
         sns.scatterplot(x=output.index, y=output, ax=axes[0], s=2)
         sns.lineplot(x=trend.index, y=trend, ax=axes[0], color='red')
 
