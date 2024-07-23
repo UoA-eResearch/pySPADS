@@ -27,6 +27,7 @@ class LinRegCoefficients(SaveLoadBaseModel):
     """
     use_intercept: bool = False
     normalize: bool = False
+    model: Optional[str] = None  # Which model was used to generate the fit
     coeffs: dict[int, dict[str, float]]  # {component: {driver: coefficient}}
     intercepts: Optional[dict[int, float]] = None  # {component: intercept}
 

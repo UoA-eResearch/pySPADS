@@ -1,11 +1,12 @@
 import numpy as np
 from scipy.optimize import fmin
 from sklearn.linear_model import LinearRegression
+from sklearn.linear_model._base import LinearModel
 
-# Recreation of linear regression method in matlab code - appears to be less accurate than scikitlearns implementation
+# Recreation of linear regression method in matlab code - appears to be less accurate than scikit-learns implementation
 
 
-def calc_SSE_all_Coef(theta: np.ndarray, S, PC, fit_intercept=False):
+def calc_sse_all_coef(theta: np.ndarray, S, PC, fit_intercept=False):
     m = np.zeros((1, PC.shape[0]))
     for j in range(PC.shape[1]):
         X1 = theta[j] * PC[:, j]
@@ -18,17 +19,28 @@ def calc_SSE_all_Coef(theta: np.ndarray, S, PC, fit_intercept=False):
     return -(1 - d1 / (d2 * len(S)))
 
 
-def mreg2(y, X, fit_intercept=False):
-    reg = LinearRegression(fit_intercept=fit_intercept).fit(X, y)
-    bb = reg.coef_
-    if fit_intercept:
-        bb = np.append(bb, reg.intercept_)
+class MReg2(LinearModel):
+    def __init__(self, fit_intercept=False):
+        self.fit_intercept = fit_intercept
 
-    beta = fmin(calc_SSE_all_Coef, bb, args=(y.to_numpy(), X.to_numpy(), fit_intercept),
-                maxiter=100000, maxfun=100000,
-                disp=False)
+    def fit(self, X, y):
+        # Initial solution from linear regression
+        reg = LinearRegression(fit_intercept=self.fit_intercept).fit(X, y)
+        bb = reg.coef_
 
-    if fit_intercept:
-        return beta[:-1], beta[-1]
-    else:
-        return beta, 0
+        if self.fit_intercept:
+            bb = np.append(bb, reg.intercept_)
+
+        # Further optimize fit
+        beta = fmin(calc_sse_all_coef, bb, args=(y.to_numpy(), X.to_numpy(), self.fit_intercept),
+                    maxiter=100000, maxfun=100000,
+                    disp=False)
+
+        if self.fit_intercept:
+            self.coef_ = beta[:-1]
+            self.intercept_ = beta[-1]
+        else:
+            self.coef_ = beta
+            self.intercept_ = 0
+
+        return self
