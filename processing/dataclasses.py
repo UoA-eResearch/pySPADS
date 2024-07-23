@@ -16,7 +16,8 @@ class SaveLoadBaseModel(BaseModel):
 
     @classmethod
     def load(cls: type[Model], path: str) -> Model:
-        return cls.parse_file(path)
+        with open(path, 'r') as f:
+            return cls.model_validate_json(f.read())
 
 
 class LinRegCoefficients(SaveLoadBaseModel):
