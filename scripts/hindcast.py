@@ -8,7 +8,7 @@ from tqdm import tqdm
 from pipeline.decompose import decompose, reject_noise
 from pipeline.frequencies import match_frequencies
 from pipeline.reconstruct import fit, hindcast_index, get_X
-from processing.data import load_data_from_csvs, imf_filename, load_imfs
+from processing.data import load_data_from_csvs, imf_filename, load_imfs, load_imf
 from processing.dataclasses import LinRegCoefficients
 from visualisation import paper
 
@@ -28,6 +28,7 @@ if __name__ == '__main__':
     noises = [0.1, 0.2, 0.3, 0.4, 0.5]
     frequency_threshold = 0.25
     noise_threshold = 0.95
+    exclude_trend = True
 
     drivers = list(set(dfs.keys()) - {signal})
 
@@ -59,11 +60,25 @@ if __name__ == '__main__':
             else:
                 df = dfs[col].loc[start_date:end_date]
 
-            imf_df = decompose(df, noise=noise, num_trials=100, progress=False)
+            imf_df = decompose(df, noise=noise, num_trials=100, progress=False, parallel=False)
             imf_df.to_csv(filename)
 
-    ## Match input frequencies to driver frequencies
+    # Additional full decomposition of signal, for plots
+    for noise in noises:
+        filename = imf_filename(imf_dir, f'{signal}_full', noise)
+        if filename.exists():
+            continue
+
+        df = dfs[signal].loc[start_date:end_date]
+
+        imf_df = decompose(df, noise=noise, num_trials=100, progress=False, parallel=False)
+        imf_df.to_csv(filename)
+
+    ## Load and re-arrange resulting decompositions
     imfs = load_imfs(imf_dir)
+
+    # Filter out signal_full imfs
+    imfs = {(label, noise): imf for (label, noise), imf in imfs.items() if label != f'{signal}_full'}
 
     # Drop IMF modes that are mostly noise
     for label, imf_df in imfs.items():
@@ -92,18 +107,23 @@ if __name__ == '__main__':
 
     for noise in noises:
         # Match signal components to nearest driver components by frequency
-        nearest_freqs[noise] = match_frequencies(imfs_by_noise[noise], signal, frequency_threshold)
+        nearest_freqs[noise] = match_frequencies(imfs_by_noise[noise], signal, frequency_threshold,
+                                                 exclude_trend=exclude_trend)
         nearest_freqs[noise].to_csv(output_folder / f'frequencies_{noise}.csv')
 
         # Linear regression of decomposed drivers to decomposed signal
-        coefficients[noise] = fit(imfs_by_noise[noise], nearest_freqs[noise], signal, model='ridge', fit_intercept=True)
+        coefficients[noise] = fit(imfs_by_noise[noise], nearest_freqs[noise], signal, model='mreg2',
+                                  fit_intercept=True, exclude_trend=exclude_trend)
 
         # SI 3 figure
-        f = paper.fig_si3(imfs_by_noise[noise], nearest_freqs[noise], signal, coefficients[noise], annotate_coeffs=True)
+        f = paper.fig_si3(imfs_by_noise[noise], nearest_freqs[noise], signal, coefficients[noise],
+                          annotate_coeffs=True, exclude_trend=exclude_trend)
         f.savefig(output_folder / 'figures' / f'fig_si3_{noise}.png')
 
         # Make predictions for each component of the signal
         output_columns = imfs_by_noise[noise][signal].columns
+        if exclude_trend:
+            output_columns = output_columns[:-1]
         index = pd.date_range(start=start_date, end=end_date, freq='D')  # Note we're predicting from start date
         comp_preds = pd.DataFrame(index=index, columns=output_columns)
 
@@ -122,5 +142,12 @@ if __name__ == '__main__':
     total: pd.Series = sum(list(predictions.values())) / len(predictions)
     total.to_csv(output_folder / 'reconstructed_total_df.csv')
 
-    f = paper.fig4(dfs[signal], total, '2000-01-01', '2019-12-31', hindcast_date)
+    if exclude_trend:
+        # Load full signal decomposition + detrend for plot
+        signal_full = load_imf(imf_filename(imf_dir, f'{signal}_full', 0.1))
+        plot_signal = dfs[signal] - signal_full.iloc[:, -1]
+    else:
+        plot_signal = dfs[signal]
+
+    f = paper.fig4(plot_signal, total, '2000-01-01', '2019-12-31', hindcast_date)
     f.savefig(output_folder / 'figures' / 'fig4.png')

@@ -159,7 +159,8 @@ def fig4(signal: pd.Series, imf_predictions: pd.Series, start: datetime, end: da
 
 
 def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
-            coeffs: LinRegCoefficients, annotate_coeffs: bool = False) -> plt.Figure:
+            coeffs: LinRegCoefficients, annotate_coeffs: bool = False,
+            exclude_trend: bool = False) -> plt.Figure:
     """SI fig 3: matrix of driver components contributing to signal components"""
     # Set up a plot grid, with an extra cols for summation arrows + result column
     num_components = len(imfs[signal].columns)
@@ -175,7 +176,10 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
     drivers = sorted(list(set(imfs.keys()) - {signal}))
     # TODO: plot for training range, hindcast range, forecast?
     index = hindcast_index(imfs, signal)
-    for i, component in enumerate(imfs[signal].columns):
+    signal_components = imfs[signal].columns
+    if exclude_trend:
+        signal_components = signal_components[:-1]
+    for i, component in enumerate(signal_components):
         X = get_X(imfs, nearest_freqs, signal, component, index)
         y = get_y(imfs, signal, component, index)
 
@@ -200,7 +204,7 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
                 axs[i][j].axis('off')
 
     # Plot signal totals
-    for i, component in enumerate(imfs[signal].columns):
+    for i, component in enumerate(signal_components):
         X = get_X(imfs, nearest_freqs, signal, component, index)
         y = get_y(imfs, signal, component, index)
 
@@ -220,6 +224,8 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
              horizontalalignment='left', verticalalignment='center', rotation=-90,
              transform=axs[int(num_components/2)][num_drivers + 1].transAxes)
     frequencies = component_frequencies(imfs[signal])
+    if exclude_trend:
+        frequencies = frequencies[:-1]
     component_period_days = 365 / frequencies
     max_period_yrs = (imfs[signal].index.max() - imfs[signal].index.min()).days / 365
 
@@ -248,7 +254,7 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
     # Label components
     plt.text(-0.6, 0.5, 'Components', fontsize=40, rotation='vertical',
              horizontalalignment='center', verticalalignment='center', transform=axs[int(num_components/2)][0].transAxes)
-    for i, component in enumerate(imfs[signal].columns):
+    for i, component in enumerate(signal_components):
         plt.text(-0.3, 0.5, component, fontsize=40,
                  horizontalalignment='right', verticalalignment='center', transform=axs[i][0].transAxes)
 

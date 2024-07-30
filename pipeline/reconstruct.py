@@ -27,7 +27,8 @@ def get_y(imfs, signal, component, hindcast_index):
 
 
 def fit(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
-        model: str = 'mreg2', fit_intercept: bool = False) -> LinRegCoefficients:
+        model: str = 'mreg2', fit_intercept: bool = False,
+        exclude_trend: bool = False) -> LinRegCoefficients:
     index = hindcast_index(imfs, signal)
 
     # Select model to use
@@ -42,6 +43,9 @@ def fit(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
     output = {}
     intercepts = {}
     for i, component in enumerate(imfs[signal].columns):
+        if exclude_trend and component == imfs[signal].columns[-1]:
+            continue
+
         X = get_X(imfs, nearest_freqs, signal, component, index)
         y = get_y(imfs, signal, component, index)
 
