@@ -3,7 +3,7 @@ geopandas
 jupyterlab
 shapely
 tqdm
-numpy
+numpy==1.26.0
 scipy
 matplotlib
 seaborn
@@ -13,3 +13,5 @@ EMD-signal
 scikit-learn
 click
 mat73
+pydantic==2.7.4
+colorcet
