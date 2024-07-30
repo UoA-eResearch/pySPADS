@@ -29,6 +29,8 @@ if __name__ == '__main__':
     frequency_threshold = 0.25
     noise_threshold = 0.95
 
+    drivers = list(set(dfs.keys()) - {signal})
+
     # decompose from earliest available date to latest date available for all input data
     start_date = min([min(df.index) for df in dfs.values()])
     end_date = min([max(df.index) for df in dfs.values()])
@@ -37,9 +39,9 @@ if __name__ == '__main__':
 
     # Replicate figures from paper
     (output_folder / 'figures').mkdir(parents=True, exist_ok=True)
-    # Skip figure 1 if missing PCA data
-    # f = paper.fig1(dfs['PC0'], dfs['Hs'], dfs['Tp'], dfs['Dir'], '2004-01-01', '2016-01-01')
-    # f.savefig(output_folder / 'figures' / 'fig1.png')
+    if 'PC0' in drivers:  # Skip figure 1 if missing PCA data
+        f = paper.fig1(dfs['PC0'], dfs['Hs'], dfs['Tp'], dfs['Dir'], '2004-01-01', '2016-01-01')
+        f.savefig(output_folder / 'figures' / 'fig1.png')
 
     # Perform decomposition (warning: takes ~4 hours)
     imf_dir = output_folder / 'imfs'
@@ -78,49 +80,46 @@ if __name__ == '__main__':
             imfs_by_noise[noise] = {}
         imfs_by_noise[noise][label] = imfs[(label, noise)]
 
-    # Skip figure 3 if missing PCA data
-    # f = paper.fig3(imfs_by_noise[0.1], f'{signal}_full', '1999-01-01', '2017-01-01')
-    # f.savefig(output_folder / 'figures' / 'fig3.png')
-
-    nearest_freqs: dict[float, pd.DataFrame] = {}
-    for noise in imfs_by_noise:
-        nearest_freq = match_frequencies(imfs_by_noise[noise], signal, frequency_threshold)
-        nearest_freqs[noise] = nearest_freq
-        nearest_freq.to_csv(output_folder / f'frequencies_{noise}.csv')
+    if 'PC0' in drivers:  # Skip figure 3 if missing PCA data
+        f = paper.fig3(imfs_by_noise[0.1], f'{signal}', '1999-01-01', '2017-01-01')
+        f.savefig(output_folder / 'figures' / 'fig3.png')
 
     ## Reconstruct signal (including hindcast) from drivers
-    # Linear regression of decomposed drivers to decomposed signal
-    coefficients: dict[float, LinRegCoefficients] = {
-        noise: fit(imfs_by_noise[noise], nearest_freqs[noise], signal, model='ridge', fit_intercept=True)
-        for noise in imfs_by_noise
-    }
+    nearest_freqs: dict[float, pd.DataFrame] = {}
+    coefficients: dict[float, LinRegCoefficients] = {}
+    component_predictions: dict[float, pd.DataFrame] = {}
+    predictions: dict[float, pd.Series] = {}
 
-    # SI 3 figure
-    for noise in imfs_by_noise:
+    for noise in noises:
+        # Match signal components to nearest driver components by frequency
+        nearest_freqs[noise] = match_frequencies(imfs_by_noise[noise], signal, frequency_threshold)
+        nearest_freqs[noise].to_csv(output_folder / f'frequencies_{noise}.csv')
+
+        # Linear regression of decomposed drivers to decomposed signal
+        coefficients[noise] = fit(imfs_by_noise[noise], nearest_freqs[noise], signal, model='ridge', fit_intercept=True)
+
+        # SI 3 figure
         f = paper.fig_si3(imfs_by_noise[noise], nearest_freqs[noise], signal, coefficients[noise], annotate_coeffs=True)
         f.savefig(output_folder / 'figures' / f'fig_si3_{noise}.png')
 
-    hindcast_df: dict[float, pd.DataFrame] = {}
-    for noise in imfs_by_noise:
+        # Make predictions for each component of the signal
         output_columns = imfs_by_noise[noise][signal].columns
         index = pd.date_range(start=start_date, end=end_date, freq='D')  # Note we're predicting from start date
+        comp_preds = pd.DataFrame(index=index, columns=output_columns)
 
-        predictions = pd.DataFrame(index=index, columns=output_columns)
         for component in output_columns:
             X = get_X(imfs_by_noise[noise], nearest_freqs[noise], signal, component, index)
 
-            pred = coefficients[noise].predict(component, X)
-            predictions.loc[:, component] = pred
+            comp_preds.loc[:, component] = coefficients[noise].predict(component, X)
 
-        hindcast_df[noise] = predictions
-        predictions.to_csv(output_folder / f'predictions_{noise}.csv')
+        component_predictions[noise] = comp_preds
+        comp_preds.to_csv(output_folder / f'predictions_{noise}.csv')
 
-    by_noise_df: dict[float, pd.Series] = {
-        noise: hindcast_df[noise].sum(axis=1)
-        for noise in hindcast_df
-    }
+        # Sum component predictions to give overall signal prediction (for this noise level)
+        predictions[noise] = component_predictions[noise].sum(axis=1)
 
-    total: pd.Series = sum(list(by_noise_df.values())) / len(by_noise_df)
+    # Combine predictions from all noise levels into single output
+    total: pd.Series = sum(list(predictions.values())) / len(predictions)
     total.to_csv(output_folder / 'reconstructed_total_df.csv')
 
     f = paper.fig4(dfs[signal], total, '2000-01-01', '2019-12-31', hindcast_date)
