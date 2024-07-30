@@ -7,6 +7,7 @@ from visualisation.paper import fig_si3
 # Parameters
 noise = float(snakemake.wildcards.noise)
 signal = snakemake.params.c['signal']
+exclude_trend = snakemake.params.c.get('exclude_trend', False)
 
 model = snakemake.wildcards.model
 fit_intercept = '_intercept' in model
@@ -24,12 +25,12 @@ for fname in snakemake.input.imfs:
 nearest_freq = pd.read_csv(snakemake.input.freqs, index_col=0)
 
 # Linear regression
-coeffs = fit(imfs, nearest_freq, signal, model=model, fit_intercept=fit_intercept)
+coeffs = fit(imfs, nearest_freq, signal, model=model, fit_intercept=fit_intercept, exclude_trend=exclude_trend)
 
 # Save
 coeffs.save(snakemake.output.coeffs)
 
 # Debug figure
 # f = fit_plot_norm(imfs, nearest_freq, signal)
-f = fig_si3(imfs, nearest_freq, signal, coeffs, annotate_coeffs=True)
+f = fig_si3(imfs, nearest_freq, signal, coeffs, annotate_coeffs=True, exclude_trend=exclude_trend)
 f.savefig(snakemake.output.figure)

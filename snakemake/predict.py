@@ -10,6 +10,7 @@ from processing.dataclasses import LinRegCoefficients
 # Parameters
 noise = float(snakemake.wildcards.noise)
 signal = snakemake.params.c['signal']
+exclude_trend = snakemake.params.c.get('exclude_trend', False)
 
 with open(snakemake.input.dates, 'r') as f:
     dates = json.load(f)
@@ -33,6 +34,8 @@ coeffs = LinRegCoefficients.load(snakemake.input.coeffs)
 
 # Make predictions
 output_columns = imfs[signal].columns
+if exclude_trend:
+    output_columns = output_columns[:-1]
 index = pd.date_range(start=start_date, end=end_date, freq='D')
 predictions = pd.DataFrame(index=index, columns=output_columns)
 

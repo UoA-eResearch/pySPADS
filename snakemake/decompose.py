@@ -14,7 +14,7 @@ with open(snakemake.input.dates, 'r') as f:
 label = snakemake.wildcards.label
 signal = snakemake.params.c['signal']
 
-if label == signal:
+if label == signal and not snakemake.params.full:
     # TODO: handle both hindcast and forecast - make explicit what date range is considered
     df = dfs[label].loc[dates['start']:dates['hindcast']]
 else:

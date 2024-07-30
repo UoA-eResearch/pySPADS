@@ -80,7 +80,21 @@ rule decompose:
     output:
         'imfs/{label}_imf_{noise}.csv'
     params:
-        c=configuration
+        c=configuration,
+        full=False
+    script:
+        'snakemake/decompose.py'
+
+rule decompose_full_signal:
+    # Decompose full signal into IMFs
+    input:
+        folder='input',
+        dates='dates.json'
+    output:
+        'imfs/{label}_full_imf_{noise}.csv'
+    params:
+        c=configuration,
+        full=True
     script:
         'snakemake/decompose.py'
 
@@ -191,6 +205,7 @@ rule paper_fig3_mean:
 rule paper_fig4:
     input:
         folder='input',
+        imf_folder='imfs/',
         predictions='{model}/predictions.csv',
         dates='dates.json'
     output:
