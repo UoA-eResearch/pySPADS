@@ -9,6 +9,7 @@ from pipeline.decompose import decompose, reject_noise
 from pipeline.frequencies import match_frequencies
 from pipeline.reconstruct import fit, hindcast_index, get_X
 from processing.data import load_data_from_csvs, imf_filename, load_imfs
+from processing.dataclasses import LinRegCoefficients
 from visualisation import paper
 
 if __name__ == '__main__':
@@ -71,7 +72,7 @@ if __name__ == '__main__':
     f.savefig(output_folder / 'figures' / 'fig2.png')
 
     # Re-organise imfs into dict[noise][label]
-    imfs_by_noise = {}
+    imfs_by_noise: dict[float, dict[str, pd.DataFrame]] = {}
     for label, noise in imfs.keys():
         if noise not in imfs_by_noise:
             imfs_by_noise[noise] = {}
@@ -81,7 +82,7 @@ if __name__ == '__main__':
     # f = paper.fig3(imfs_by_noise[0.1], f'{signal}_full', '1999-01-01', '2017-01-01')
     # f.savefig(output_folder / 'figures' / 'fig3.png')
 
-    nearest_freqs = {}
+    nearest_freqs: dict[float, pd.DataFrame] = {}
     for noise in imfs_by_noise:
         nearest_freq = match_frequencies(imfs_by_noise[noise], signal, frequency_threshold)
         nearest_freqs[noise] = nearest_freq
@@ -89,7 +90,7 @@ if __name__ == '__main__':
 
     ## Reconstruct signal (including hindcast) from drivers
     # Linear regression of decomposed drivers to decomposed signal
-    coefficients = {
+    coefficients: dict[float, LinRegCoefficients] = {
         noise: fit(imfs_by_noise[noise], nearest_freqs[noise], signal, model='ridge', fit_intercept=True)
         for noise in imfs_by_noise
     }
@@ -99,7 +100,7 @@ if __name__ == '__main__':
         f = paper.fig_si3(imfs_by_noise[noise], nearest_freqs[noise], signal, coefficients[noise], annotate_coeffs=True)
         f.savefig(output_folder / 'figures' / f'fig_si3_{noise}.png')
 
-    hindcast_df = {}
+    hindcast_df: dict[float, pd.DataFrame] = {}
     for noise in imfs_by_noise:
         output_columns = imfs_by_noise[noise][signal].columns
         index = pd.date_range(start=start_date, end=end_date, freq='D')  # Note we're predicting from start date
@@ -114,12 +115,12 @@ if __name__ == '__main__':
         hindcast_df[noise] = predictions
         predictions.to_csv(output_folder / f'predictions_{noise}.csv')
 
-    by_noise_df = {
+    by_noise_df: dict[float, pd.Series] = {
         noise: hindcast_df[noise].sum(axis=1)
         for noise in hindcast_df
     }
 
-    total = sum(list(by_noise_df.values())) / len(by_noise_df)
+    total: pd.Series = sum(list(by_noise_df.values())) / len(by_noise_df)
     total.to_csv(output_folder / 'reconstructed_total_df.csv')
 
     f = paper.fig4(dfs[signal], total, '2000-01-01', '2019-12-31', hindcast_date)
