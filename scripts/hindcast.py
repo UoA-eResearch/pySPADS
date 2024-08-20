@@ -11,6 +11,7 @@ from pipeline.reconstruct import fit, hindcast_index, get_X
 from processing.data import load_data_from_csvs, imf_filename, load_imfs, load_imf
 from processing.dataclasses import LinRegCoefficients
 from visualisation import paper
+from visualisation.imfs import plot_imfs
 
 if __name__ == '__main__':
     run_label = 'run1'
@@ -63,6 +64,9 @@ if __name__ == '__main__':
             imf_df = decompose(df, noise=noise, num_trials=100, progress=False, parallel=False)
             imf_df.to_csv(filename)
 
+            plot_imfs(imf_df.to_numpy().T, f'{col}-{noise}',
+                      output_folder / 'figures' / 'imfs' / f'{col}_imf_{noise}.png')
+
     # Additional full decomposition of signal, for plots
     for noise in noises:
         filename = imf_filename(imf_dir, f'{signal}_full', noise)
@@ -73,6 +77,10 @@ if __name__ == '__main__':
 
         imf_df = decompose(df, noise=noise, num_trials=100, progress=False, parallel=False)
         imf_df.to_csv(filename)
+
+        plot_imfs(imf_df.to_numpy().T, f'{signal}-{noise}',
+                  output_folder / 'figures' / 'imfs' / f'{signal}_full_imf_{noise}.png')
+
 
     ## Load and re-arrange resulting decompositions
     imfs = load_imfs(imf_dir)
