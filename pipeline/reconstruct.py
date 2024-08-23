@@ -49,6 +49,10 @@ def fit(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
         if exclude_trend and component == imfs[signal].columns[-1]:
             continue
 
+        if component not in nearest_freqs.index:
+            # Given component had no matching frequencies in drivers
+            continue
+
         X = get_X(imfs, nearest_freqs, signal, component, index)
         y = get_y(imfs, signal, component, index)
 

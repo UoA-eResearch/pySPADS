@@ -1,14 +1,12 @@
-import os
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from pipeline.decompose import decompose, reject_noise
+from pipeline.decompose import decompose, reject_noise, detect_trend, gen_trend
 from pipeline.frequencies import match_frequencies
-from pipeline.reconstruct import fit, hindcast_index, get_X
-from processing.data import load_data_from_csvs, imf_filename, load_imfs, load_imf
+from pipeline.reconstruct import fit, get_X
+from processing.data import load_data_from_csvs, imf_filename, load_imfs
 from processing.dataclasses import LinRegCoefficients
 from visualisation import paper
 from visualisation.imfs import plot_imfs
@@ -39,6 +37,15 @@ if __name__ == '__main__':
     end_date = min([max(df.index) for df in dfs.values()])
     # date from which to hindcast signal
     hindcast_date = pd.Timestamp('2012-01-01')
+
+    # De-trend signal data, and calculate linear regression to re-trend after prediction
+    if exclude_trend:
+        # Fit trend based on training data
+        d = dfs[signal].loc[start_date:hindcast_date]
+        signal_trend = detect_trend(d)
+
+        # Subtract trend from input signal
+        dfs[signal] -= gen_trend(dfs[signal], signal_trend)
 
     # Replicate figures from paper
     (output_folder / 'figures').mkdir(parents=True, exist_ok=True)
@@ -114,7 +121,7 @@ if __name__ == '__main__':
     component_predictions: dict[float, pd.DataFrame] = {}
     predictions: dict[float, pd.Series] = {}
 
-    for noise in noises:
+    for noise in tqdm(noises, desc='Reconstructing signal'):
         # Match signal components to nearest driver components by frequency
         nearest_freqs[noise] = match_frequencies(imfs_by_noise[noise], signal, frequency_threshold,
                                                  exclude_trend=exclude_trend)
@@ -137,9 +144,12 @@ if __name__ == '__main__':
         comp_preds = pd.DataFrame(index=index, columns=output_columns)
 
         for component in output_columns:
-            X = get_X(imfs_by_noise[noise], nearest_freqs[noise], signal, component, index)
+            if component in nearest_freqs[noise].index:
+                X = get_X(imfs_by_noise[noise], nearest_freqs[noise], signal, component, index)
 
-            comp_preds.loc[:, component] = coefficients[noise].predict(component, X)
+                comp_preds.loc[:, component] = coefficients[noise].predict(component, X)
+            else:
+                comp_preds = comp_preds.drop(columns=[component])
 
         component_predictions[noise] = comp_preds
         comp_preds.to_csv(output_folder / f'predictions_{noise}.csv')
@@ -149,12 +159,13 @@ if __name__ == '__main__':
 
     # Combine predictions from all noise levels into single output
     total: pd.Series = sum(list(predictions.values())) / len(predictions)
+    if exclude_trend:
+        total += gen_trend(total, signal_trend)
     total.to_csv(output_folder / 'reconstructed_total_df.csv')
 
     if exclude_trend:
-        # Load full signal decomposition + detrend for plot
-        signal_full = load_imf(imf_filename(imf_dir, f'{signal}_full', 0.1))
-        plot_signal = dfs[signal] - signal_full.iloc[:, -1]
+        # Add trend back into signal for plotting
+        plot_signal = dfs[signal] + gen_trend(dfs[signal], signal_trend)
     else:
         plot_signal = dfs[signal]
 

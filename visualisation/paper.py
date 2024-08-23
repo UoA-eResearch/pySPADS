@@ -180,6 +180,15 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
     if exclude_trend:
         signal_components = signal_components[:-1]
     for i, component in enumerate(signal_components):
+        if component not in nearest_freqs.index:
+            # Create fake axes for missing components
+            for j in range(len(drivers)):
+                ax = plt.subplot(grid[i, j])
+                # hide
+                ax.axis('off')
+                axs[i][j] = ax
+            continue
+
         X = get_X(imfs, nearest_freqs, signal, component, index)
         y = get_y(imfs, signal, component, index)
 
@@ -205,14 +214,18 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
 
     # Plot signal totals
     for i, component in enumerate(signal_components):
+        ax = plt.subplot(grid[i, num_drivers + 1])
+        axs[i][num_drivers + 1] = ax
+
+        if component not in nearest_freqs:
+            continue
+
         X = get_X(imfs, nearest_freqs, signal, component, index)
         y = get_y(imfs, signal, component, index)
 
-        ax = plt.subplot(grid[i, num_drivers + 1])
         ax.plot(index, y, label='signal', color=cmap[0])
         ax.plot(index, coeffs.predict(component, X),
                 label='prediction', color=cmap[2], alpha=0.5)
-        axs[i][num_drivers + 1] = ax
 
         # Summation arrow
         plt.annotate('', xy=(-0.3, 0.5), xycoords=ax,

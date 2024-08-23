@@ -28,8 +28,11 @@ def match_frequencies(imfs: dict[str, pd.DataFrame], signal: str, threshold: flo
     #  nearest frequencies will then not be generated from driver components
     if exclude_trend:
         trend_col = imfs[signal].columns[-1]
-        assert freq_df.loc[trend_col, signal] == 0, 'Trend component must have frequency 0'
-        freq_df.loc[trend_col, signal] = np.nan
+        # TODO: make this behaviour a parameter?
+        if freq_df.loc[trend_col, signal] == 0:
+            freq_df.loc[trend_col, signal] = np.nan
+        else:
+            print('Warning: signal has no zero-frequency trend component to exclude')
 
     # Find the nearest frequency in each input IMF to the frequency of each output mode
     logger.info('Matching signal modes to nearest frequencies in input modes')
@@ -40,17 +43,22 @@ def match_frequencies(imfs: dict[str, pd.DataFrame], signal: str, threshold: flo
     rel_diff_df = relative_frequency_difference(freq_df[signal], freq_df.drop(columns=[signal]), nearest_freq)
 
     valid_components = (rel_diff_df < threshold).sum(axis=1)
-    if any(valid_components == 0):
-        raise ValueError(f'No valid input components for output components: '
-                         f'{valid_components[valid_components == 0].index}')
+    # TODO: check this behaviour/make it a parameter
+    if valid_components.iloc[-1] == 0:
+        print('Warning: No valid input components for trend component of output signal, excluding from output')
+    if any(valid_components.iloc[:-1] == 0):
+        print(f'Warning: No valid input components for non-trend output component: '
+                         f'{list(valid_components[valid_components == 0].index)}')
+        # raise ValueError(f'No valid input components for non-trend output component: '
+        #                  f'{list(valid_components[valid_components == 0].index)}')
 
     if any(valid_components < 3):
         logger.info(f'Warning: some output components have less than 3 valid input components: '
-                    f'{valid_components[valid_components < 3].index}')
+                    f'{list(valid_components[valid_components < 3].index)}')
 
     # Show the components which are used for each output component
     logger.info('Components used for each output component:')
     for i in rel_diff_df.index:
         logger.info(f'{i:>5} : {np.sum(rel_diff_df.loc[i] < threshold)}')
 
-    return nearest_freq[rel_diff_df < threshold]
+    return nearest_freq[rel_diff_df < threshold].dropna(how='all')
