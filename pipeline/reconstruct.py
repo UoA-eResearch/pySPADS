@@ -46,9 +46,6 @@ def fit(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
     intercepts = {}
     scalars = {}
     for i, component in enumerate(imfs[signal].columns):
-        if exclude_trend and component == imfs[signal].columns[-1]:
-            continue
-
         if component not in nearest_freqs.index:
             # Given component had no matching frequencies in drivers
             continue

@@ -163,7 +163,8 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
             exclude_trend: bool = False) -> plt.Figure:
     """SI fig 3: matrix of driver components contributing to signal components"""
     # Set up a plot grid, with an extra cols for summation arrows + result column
-    num_components = len(imfs[signal].columns)
+    signal_components = [c for c in imfs[signal].columns if c in nearest_freqs.index]
+    num_components = len(signal_components)
     num_drivers = len(imfs) - 1
 
     grid = plt.GridSpec(num_components, num_drivers + 2, hspace=0.5)
@@ -176,19 +177,8 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
     drivers = sorted(list(set(imfs.keys()) - {signal}))
     # TODO: plot for training range, hindcast range, forecast?
     index = hindcast_index(imfs, signal)
-    signal_components = imfs[signal].columns
-    if exclude_trend:
-        signal_components = signal_components[:-1]
-    for i, component in enumerate(signal_components):
-        if component not in nearest_freqs.index:
-            # Create fake axes for missing components
-            for j in range(len(drivers)):
-                ax = plt.subplot(grid[i, j])
-                # hide
-                ax.axis('off')
-                axs[i][j] = ax
-            continue
 
+    for i, component in enumerate(signal_components):
         X = get_X(imfs, nearest_freqs, signal, component, index)
         y = get_y(imfs, signal, component, index)
 
@@ -217,9 +207,6 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
         ax = plt.subplot(grid[i, num_drivers + 1])
         axs[i][num_drivers + 1] = ax
 
-        if component not in nearest_freqs:
-            continue
-
         X = get_X(imfs, nearest_freqs, signal, component, index)
         y = get_y(imfs, signal, component, index)
 
@@ -236,9 +223,7 @@ def fig_si3(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
     plt.text(2.5, 0.5, 'component period', fontsize=40,
              horizontalalignment='left', verticalalignment='center', rotation=-90,
              transform=axs[int(num_components/2)][num_drivers + 1].transAxes)
-    frequencies = component_frequencies(imfs[signal])
-    if exclude_trend:
-        frequencies = frequencies[:-1]
+    frequencies = component_frequencies(imfs[signal][signal_components])
     component_period_days = 365 / frequencies
     max_period_yrs = (imfs[signal].index.max() - imfs[signal].index.min()).days / 365
 

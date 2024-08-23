@@ -3,6 +3,7 @@ import pandas as pd
 import logging
 
 from processing.recomposition import component_frequencies, nearest_frequency, relative_frequency_difference
+from processing.significance import zero_crossings
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,9 @@ def match_frequencies(imfs: dict[str, pd.DataFrame], signal: str, threshold: flo
         trend_col = imfs[signal].columns[-1]
         # TODO: make this behaviour a parameter?
         if freq_df.loc[trend_col, signal] == 0:
+            freq_df.loc[trend_col, signal] = np.nan
+        elif zero_crossings(imfs[signal][trend_col]) <= 2:
+            print("Warning: excluding signal trend with <= 2 zero crossings")
             freq_df.loc[trend_col, signal] = np.nan
         else:
             print('Warning: signal has no zero-frequency trend component to exclude')
