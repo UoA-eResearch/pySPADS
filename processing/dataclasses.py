@@ -27,11 +27,17 @@ class LinRegCoefficients(SaveLoadBaseModel):
     """
     use_intercept: bool = False
     normalize: bool = False
+    scalars: Optional[dict[int, dict[str, tuple[float, float]]]] = None  # {component: {driver: (mean, scale)}}
     model: Optional[str] = None  # Which model was used to generate the fit
     coeffs: dict[int, dict[str, float]]  # {component: {driver: coefficient}}
     intercepts: Optional[dict[int, float]] = None  # {component: intercept}
 
     def predict(self, component: int, X: dict[str: pd.DataFrame]) -> pd.DataFrame:
+        if self.normalize:
+            for col in X.columns:
+                mean, scale = self.scalars[component][col]
+                X[col] = (X[col] - mean) / scale
+
         if self.use_intercept:
             return self.intercepts[component] + np.sum(
                 [X[driver] * self.coeffs[component][driver] for driver in X.columns], axis=0

@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
 from optimization import MReg2
 from sklearn.linear_model import LinearRegression, Ridge
 
@@ -27,7 +29,7 @@ def get_y(imfs, signal, component, hindcast_index):
 
 
 def fit(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
-        model: str = 'mreg2', fit_intercept: bool = False,
+        model: str = 'mreg2', fit_intercept: bool = False, normalize: bool = False,
         exclude_trend: bool = False) -> LinRegCoefficients:
     index = hindcast_index(imfs, signal)
 
@@ -42,12 +44,18 @@ def fit(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
 
     output = {}
     intercepts = {}
+    scalars = {}
     for i, component in enumerate(imfs[signal].columns):
         if exclude_trend and component == imfs[signal].columns[-1]:
             continue
 
         X = get_X(imfs, nearest_freqs, signal, component, index)
         y = get_y(imfs, signal, component, index)
+
+        if normalize:
+            sc = StandardScaler().set_output(transform='pandas')
+            X = sc.fit_transform(X)
+            scalars[component] = {label: (sc.mean_[i], sc.scale_[i]) for i, label in enumerate(X.columns)}
 
         reg = model_class(fit_intercept=fit_intercept).fit(X, y)
         coefs = reg.coef_
@@ -59,4 +67,5 @@ def fit(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
         output[component] = {label: coefs[i] for i, label in enumerate(X.columns)}
 
     return LinRegCoefficients(coeffs=output, intercepts=intercepts if fit_intercept else None,
-                              use_intercept=fit_intercept, model=model)  # TODO: handle normalize
+                              use_intercept=fit_intercept, model=model,
+                              normalize=normalize, scalars=scalars if normalize else None)

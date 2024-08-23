@@ -30,6 +30,7 @@ if __name__ == '__main__':
     frequency_threshold = 0.25
     noise_threshold = 0.95
     exclude_trend = True
+    normalize_drivers = False
 
     drivers = list(set(dfs.keys()) - {signal})
 
@@ -121,7 +122,7 @@ if __name__ == '__main__':
 
         # Linear regression of decomposed drivers to decomposed signal
         coefficients[noise] = fit(imfs_by_noise[noise], nearest_freqs[noise], signal, model='mreg2',
-                                  fit_intercept=True, exclude_trend=exclude_trend)
+                                  fit_intercept=True, normalize=normalize_drivers, exclude_trend=exclude_trend)
 
         # SI 3 figure
         f = paper.fig_si3(imfs_by_noise[noise], nearest_freqs[noise], signal, coefficients[noise],
