@@ -4,7 +4,6 @@ import pandas as pd
 from tqdm import tqdm
 
 from pipeline.decompose import decompose, reject_noise, detect_trend, gen_trend
-from pipeline.frequencies import match_frequencies
 from pipeline import steps
 from processing.data import load_data_from_csvs, imf_filename, load_imfs
 from processing.dataclasses import LinRegCoefficients
@@ -122,7 +121,7 @@ if __name__ == '__main__':
 
     for noise in tqdm(noises, desc='Reconstructing signal'):
         # Match signal components to nearest driver components by frequency
-        nearest_freqs[noise] = match_frequencies(imfs_by_noise[noise], signal, frequency_threshold,
+        nearest_freqs[noise] = steps.match_frequencies(imfs_by_noise[noise], signal, frequency_threshold,
                                                  exclude_trend=exclude_trend)
         nearest_freqs[noise].to_csv(output_folder / f'frequencies_{noise}.csv')
 

@@ -10,7 +10,6 @@ from tqdm import tqdm
 
 from pipeline import steps
 from pipeline.decompose import decompose as _decompose
-from pipeline.frequencies import match_frequencies
 from processing.data import load_imfs, load_data_from_csvs, imf_filename
 from util.click import OptionNargs
 
@@ -89,7 +88,7 @@ def match(output, signal, reject_noise, noise_threshold, frequency_threshold):
     print('Matching frequencies')
     for noise in imfs_by_noise:
         print(f'Noise: {noise}')
-        nearest_freq = match_frequencies(imfs_by_noise[noise], signal, frequency_threshold)
+        nearest_freq = steps.match_frequencies(imfs_by_noise[noise], signal, frequency_threshold)
         nearest_freq.to_csv(output / f'frequencies_{noise}.csv')
 
 

@@ -1,4 +1,4 @@
-from pipeline.frequencies import match_frequencies
+from pipeline import steps
 from processing.data import load_imf, parse_filename
 
 # Parameters
@@ -15,7 +15,7 @@ for fname in snakemake.input:
     imfs[label] = load_imf(fname)
 
 # Find nearest frequency
-nearest_freq = match_frequencies(imfs, signal, threshold, exclude_trend)
+nearest_freq = steps.match_frequencies(imfs, signal, threshold, exclude_trend)
 
 # Save
 nearest_freq.to_csv(snakemake.output[0])
