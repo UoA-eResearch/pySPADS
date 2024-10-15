@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
         # Linear regression of decomposed drivers to decomposed signal
         coefficients[noise] = steps.fit(imfs_by_noise[noise], nearest_freqs[noise], signal, model='mreg2',
-                                        fit_intercept=True, normalize=normalize_drivers, exclude_trend=exclude_trend)
+                                        fit_intercept=True, normalize=normalize_drivers)
 
         # SI 3 figure
         f = paper.fig_si3(imfs_by_noise[noise], nearest_freqs[noise], signal, coefficients[noise],

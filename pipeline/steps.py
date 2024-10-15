@@ -8,8 +8,7 @@ from processing.dataclasses import LinRegCoefficients
 
 
 def fit(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: str,
-        model: str = 'mreg2', fit_intercept: bool = False, normalize: bool = False,
-        exclude_trend: bool = False) -> LinRegCoefficients:
+        model: str = 'mreg2', fit_intercept: bool = False, normalize: bool = False) -> LinRegCoefficients:
     """
     Fit linear regression model to predict signal components from driver components
     :return: LinRegCoefficients object containing coefficients and intercepts

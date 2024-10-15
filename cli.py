@@ -113,7 +113,8 @@ def reconstruct(output, signal):
     }
 
     coefs = {
-        noise: steps.fit(imfs_by_noise[noise], nearest_freq[noise], signal)
+        noise: steps.fit(imfs_by_noise[noise], nearest_freq[noise], signal,
+                         model='mreg2', fit_intercept=True, normalize=False)
         for noise in imfs_by_noise
     }
 
