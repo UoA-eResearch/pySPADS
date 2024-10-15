@@ -3,7 +3,8 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from pathlib import Path
 
-from pipeline.reconstruct import get_X, get_y
+from pipeline import steps
+from pipeline.reconstruct import get_y
 from processing.data import parse_filename, load_imf
 from processing.dataclasses import LinRegCoefficients
 
@@ -33,25 +34,16 @@ nearest_freq = pd.read_csv(snakemake.input.freqs, index_col=0)
 coeffs = LinRegCoefficients.load(snakemake.input.coeffs)
 
 # Make predictions
-output_columns = imfs[signal].columns
-if exclude_trend:
-    output_columns = output_columns[:-1]
-index = pd.date_range(start=start_date, end=end_date, freq='D')
-predictions = pd.DataFrame(index=index, columns=output_columns)
+component_predictions = steps.predict(imfs, nearest_freq, signal, coeffs, start_date, end_date, exclude_trend)
 
-for component in output_columns:
-    X = get_X(imfs, nearest_freq, signal, component, index)
-
-    pred = coeffs.predict(component, X)
-    # pred = np.sum([X[driver] * coeffs.coeffs[component][driver]
-    #                for driver in X.columns], axis=0)
-    predictions.loc[:, component] = pred
-
+# Plot predictions
+for component in component_predictions.columns:
     # Plot prediction vs. signal for debugging
     plt.figure()
     y = get_y(imfs, signal, component, imfs[signal].index)
     plt.plot(y, label='signal')
-    plt.plot(index, pred, label='prediction', alpha=0.5)
+    pred = component_predictions[component]
+    plt.plot(pred.index, pred, label='prediction', alpha=0.5)
     plt.legend()
     plt.title(f'Noise {noise}, Component {component}')
     fname = Path(snakemake.output[0]).parent / 'figures' / 'predictions' / f'pred_{noise}_{component}.png'
@@ -59,4 +51,4 @@ for component in output_columns:
     plt.savefig(fname)
 
 # Save
-predictions.to_csv(snakemake.output[0])
+component_predictions.to_csv(snakemake.output[0])

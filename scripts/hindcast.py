@@ -5,7 +5,8 @@ from tqdm import tqdm
 
 from pipeline.decompose import decompose, reject_noise, detect_trend, gen_trend
 from pipeline.frequencies import match_frequencies
-from pipeline.reconstruct import fit, get_X
+from pipeline.reconstruct import fit
+from pipeline import steps
 from processing.data import load_data_from_csvs, imf_filename, load_imfs
 from processing.dataclasses import LinRegCoefficients
 from visualisation import paper
@@ -137,22 +138,11 @@ if __name__ == '__main__':
         f.savefig(output_folder / 'figures' / f'fig_si3_{noise}.png')
 
         # Make predictions for each component of the signal
-        output_columns = imfs_by_noise[noise][signal].columns
-        if exclude_trend:
-            output_columns = output_columns[:-1]
-        index = pd.date_range(start=start_date, end=end_date, freq='D')  # Note we're predicting from start date
-        comp_preds = pd.DataFrame(index=index, columns=output_columns)
+        predictions_by_noise = steps.predict(imfs_by_noise[noise], nearest_freqs[noise], signal, coefficients[noise],
+                                   start_date, end_date, exclude_trend=exclude_trend)
 
-        for component in output_columns:
-            if component in nearest_freqs[noise].index:
-                X = get_X(imfs_by_noise[noise], nearest_freqs[noise], signal, component, index)
-
-                comp_preds.loc[:, component] = coefficients[noise].predict(component, X)
-            else:
-                comp_preds = comp_preds.drop(columns=[component])
-
-        component_predictions[noise] = comp_preds
-        comp_preds.to_csv(output_folder / f'predictions_{noise}.csv')
+        component_predictions[noise] = predictions_by_noise
+        predictions_by_noise.to_csv(output_folder / f'predictions_{noise}.csv')
 
         # Sum component predictions to give overall signal prediction (for this noise level)
         predictions[noise] = component_predictions[noise].sum(axis=1)

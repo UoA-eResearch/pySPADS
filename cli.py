@@ -8,10 +8,11 @@ import pandas as pd
 from click.testing import CliRunner
 from tqdm import tqdm
 
+from pipeline import steps
 from pipeline.decompose import decompose as _decompose
 from pipeline.frequencies import match_frequencies
 from processing.data import load_imfs, load_data_from_csvs, imf_filename
-from pipeline.reconstruct import fit, get_X, hindcast_index
+from pipeline.reconstruct import fit
 from util.click import OptionNargs
 
 
@@ -118,40 +119,26 @@ def reconstruct(output, signal):
     }
 
     # Reconstruct
-    hindcast = defaultdict(dict)
-    hindcast_df = {}
+    hindcast = {}
+    start_date = min([min(df.index) for df in imfs.values()])
+    end_date = min([max(df.index) for df in imfs.values()])
+
     for noise in imfs_by_noise:
-        output_columns = imfs_by_noise[noise][signal].columns
-        index = hindcast_index(imfs_by_noise[noise], signal)
-        predictions = pd.DataFrame(index=index, columns=output_columns)
-        for component in imfs_by_noise[noise][signal].columns:
-            X = get_X(imfs_by_noise[noise], nearest_freq[noise], signal, component, index)
+        comp_pred = steps.predict(imfs_by_noise[noise], nearest_freq[noise], signal, coefs[noise], start_date, end_date)
 
-            pred = np.sum([X[c] * coefs[noise][component][i] for i, c in enumerate(X.columns)], axis=0)
-            predictions.loc[:, component] = pred
-            hindcast[noise][component] = pred
-
-        hindcast_df[noise] = predictions
-        predictions.to_csv(output / f'predictions_{noise}.csv')
+        hindcast[noise] = comp_pred
+        comp_pred.to_csv(output / f'predictions_{noise}.csv')
 
     # Reconstructed signal for each noise value
     by_noise = {
-        noise: sum(list(hindcast[noise].values()))
+        noise: hindcast[noise].sum(axis=1)
         for noise in hindcast
     }
     for noise, series in by_noise.items():
         np.savetxt(output / f'reconstructed_{noise}.csv', series, delimiter=',')
 
-    by_noise_df = {
-        noise: hindcast_df[noise].sum(axis=1)
-        for noise in hindcast_df
-    }
-
     total = sum(list(by_noise.values())) / len(by_noise)
-    np.savetxt(output / 'reconstructed_total.csv', total, delimiter=',')
-
-    total_df = sum(list(by_noise_df.values())) / len(by_noise_df)
-    total_df.to_csv(output / 'reconstructed_total_df.csv')
+    total.to_csv(output / 'reconstructed_total.csv')
 
 
 # Don't run this directly - it's here to enable breakpoint debugging
