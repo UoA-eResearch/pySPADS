@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.preprocessing import StandardScaler
 
 from optimization import MReg2
-from pipeline.reconstruct import get_X, hindcast_index, get_y
+from processing.reconstruct import get_X, hindcast_index, get_y
 from processing.dataclasses import LinRegCoefficients
 from processing.recomposition import component_frequencies, nearest_frequency, relative_frequency_difference
 from processing.significance import zero_crossings
