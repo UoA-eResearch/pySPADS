@@ -44,3 +44,13 @@ class LinRegCoefficients(SaveLoadBaseModel):
             )
         else:
             return np.sum([X[driver] * self.coeffs[component][driver] for driver in X.columns], axis=0)
+
+
+class TrendModel(SaveLoadBaseModel):
+    """ Linear regression model for trend prediction """
+    coeff: float = 1.0
+    intercept: float = 0.0
+
+    def predict(self, x: np.array) -> np.array:
+        """ Predict trend for given x, defaults to returning x unmodified """
+        return self.intercept + self.coeff * x

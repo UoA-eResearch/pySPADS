@@ -76,12 +76,25 @@ rule dates:
     script:
         'snakemake/dates.py'
 
+rule calc_trend:
+    # Calculate signal trend, so it can be removed if needed
+    input:
+        folder='input',
+        dates='dates.json'
+    output:
+        'trend.json'
+    params:
+        c=configuration
+    script:
+        'snakemake/calc_trend.py'
+
 # TODO: this seems too fast - test for all cols/noises?
 rule decompose:
     # Decompose each channel into IMFs
     input:
         folder='input',
-        dates='dates.json'
+        dates='dates.json',
+        trend='trend.json'
     output:
         'imfs/{label}_imf_{noise}.csv'
     params:
@@ -94,7 +107,8 @@ rule decompose_full_signal:
     # Decompose full signal into IMFs
     input:
         folder='input',
-        dates='dates.json'
+        dates='dates.json',
+        trend='trend.json'
     output:
         'imfs/{label}_full_imf_{noise}.csv'
     params:
@@ -144,7 +158,8 @@ rule predict:
 rule combine_preds:
     # Combine all predictions
     input:
-        expand('{{model}}/predictions_{noise}.csv', noise=config_noises)
+        predictions=expand('{{model}}/predictions_{noise}.csv', noise=config_noises),
+        trend='trend.json'
     output:
         '{model}/predictions.csv'
     params:
@@ -211,7 +226,8 @@ rule paper_fig4:
     input:
         folder='input',
         predictions='{model}/predictions.csv',
-        dates='dates.json'
+        dates='dates.json',
+        trend='trend.json'
     output:
         'figures/paper_{model}_fig4.png'
     params:

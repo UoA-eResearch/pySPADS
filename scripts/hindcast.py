@@ -6,7 +6,7 @@ from tqdm import tqdm
 from processing.trend import detect_trend, gen_trend
 from pipeline import steps
 from processing.data import load_data_from_csvs, imf_filename, load_imfs
-from processing.dataclasses import LinRegCoefficients
+from processing.dataclasses import LinRegCoefficients, TrendModel
 from visualisation import paper
 from visualisation.imfs import plot_imfs
 
@@ -45,6 +45,9 @@ if __name__ == '__main__':
 
         # Subtract trend from input signal
         dfs[signal] -= gen_trend(dfs[signal], signal_trend)
+    else:
+        # No-op trend if not excluding
+        signal_trend = TrendModel()
 
     # Replicate figures from paper
     (output_folder / 'figures').mkdir(parents=True, exist_ok=True)
@@ -117,7 +120,6 @@ if __name__ == '__main__':
     nearest_freqs: dict[float, pd.DataFrame] = {}
     coefficients: dict[float, LinRegCoefficients] = {}
     component_predictions: dict[float, pd.DataFrame] = {}
-    predictions: dict[float, pd.Series] = {}
 
     for noise in tqdm(noises, desc='Reconstructing signal'):
         # Match signal components to nearest driver components by frequency
@@ -141,20 +143,12 @@ if __name__ == '__main__':
         component_predictions[noise] = predictions_by_noise
         predictions_by_noise.to_csv(output_folder / f'predictions_{noise}.csv')
 
-        # Sum component predictions to give overall signal prediction (for this noise level)
-        predictions[noise] = component_predictions[noise].sum(axis=1)
-
     # Combine predictions from all noise levels into single output
-    total: pd.Series = sum(list(predictions.values())) / len(predictions)
-    if exclude_trend:
-        total += gen_trend(total, signal_trend)
+    total = steps.combine_predictions(component_predictions, trend=signal_trend)
     total.to_csv(output_folder / 'reconstructed_total_df.csv')
 
-    if exclude_trend:
-        # Add trend back into signal for plotting
-        plot_signal = dfs[signal] + gen_trend(dfs[signal], signal_trend)
-    else:
-        plot_signal = dfs[signal]
+    # Add trend back into signal for plotting
+    plot_signal = dfs[signal] + gen_trend(dfs[signal], signal_trend)
 
     f = paper.fig4(plot_signal, total, '2000-01-01', '2019-12-31', hindcast_date)
     f.savefig(output_folder / 'figures' / 'fig4.png')

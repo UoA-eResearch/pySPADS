@@ -1,6 +1,9 @@
 import pandas as pd
 import re
 
+from pipeline import steps
+from processing.dataclasses import TrendModel
+
 # TODO: pass noise of each file from snakefile, rather than parsing
 noise_pattern = re.compile('predictions_(\d+\.\d+).csv')
 def parse_noise(fname):
@@ -12,17 +15,13 @@ noises = snakemake.params.c['noises']
 
 # Load predictions by noise
 preds = {}
-for fname in snakemake.input:
+for fname in snakemake.input.predictions:
     noise = parse_noise(fname)
     assert noise in noises, f'Expected noise in {noises} but got {noise}'
     preds[noise] = pd.read_csv(fname, index_col=0)
 
-# Combine - from a column for each imf mode to a single column for each noise
-pred_by_noise = {
-    noise: preds[noise].sum(axis=1)
-    for noise in noises
-}
+# Combine predictions into single output signal
+signal_trend = TrendModel.load(snakemake.input.trend)
+total = steps.combine_predictions(preds, signal_trend)
 
-# Combine - averaging across noises
-total = sum(list(pred_by_noise.values())) / len(pred_by_noise)
 total.to_csv(snakemake.output[0])

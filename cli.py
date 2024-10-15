@@ -3,13 +3,13 @@ from collections import defaultdict
 import click
 import pathlib
 
-import numpy as np
 import pandas as pd
 from click.testing import CliRunner
 from tqdm import tqdm
 
 from pipeline import steps
 from processing.data import load_imfs, load_data_from_csvs, imf_filename
+from processing.dataclasses import TrendModel
 from util.click import OptionNargs
 
 
@@ -128,14 +128,7 @@ def reconstruct(output, signal):
         comp_pred.to_csv(output / f'predictions_{noise}.csv')
 
     # Reconstructed signal for each noise value
-    by_noise = {
-        noise: hindcast[noise].sum(axis=1)
-        for noise in hindcast
-    }
-    for noise, series in by_noise.items():
-        np.savetxt(output / f'reconstructed_{noise}.csv', series, delimiter=',')
-
-    total = sum(list(by_noise.values())) / len(by_noise)
+    total = steps.combine_predictions(hindcast, trend=TrendModel())  # TODO: implement detrending in CLI
     total.to_csv(output / 'reconstructed_total.csv')
 
 

@@ -2,6 +2,8 @@ import json
 
 from pipeline import steps
 from processing.data import load_data_from_csvs
+from processing.dataclasses import TrendModel
+from processing.trend import gen_trend
 
 # Load data
 dfs = load_data_from_csvs(snakemake.input.folder, snakemake.params.c['time_col'])
@@ -12,12 +14,17 @@ with open(snakemake.input.dates, 'r') as f:
 
 label = snakemake.wildcards.label
 signal = snakemake.params.c['signal']
+exclude_trend = snakemake.params.c.get('exclude_trend', False)
 
 if label == signal and not snakemake.params.full:
     # TODO: handle both hindcast and forecast - make explicit what date range is considered
     df = dfs[label].loc[dates['start']:dates['hindcast']]
 else:
     df = dfs[label].loc[dates['start']:dates['end']]
+
+if label == signal and exclude_trend:
+    signal_trend = TrendModel.load(snakemake.input.trend)
+    df -= gen_trend(df, signal_trend)
 
 # Decompose
 noise = float(snakemake.wildcards.noise)

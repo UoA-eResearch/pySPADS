@@ -8,7 +8,8 @@ from sklearn.preprocessing import StandardScaler
 
 from optimization import MReg2
 from processing.reconstruct import get_X, hindcast_index, get_y
-from processing.dataclasses import LinRegCoefficients
+from processing.dataclasses import LinRegCoefficients, TrendModel
+from processing.trend import gen_trend
 from processing.recomposition import component_frequencies, nearest_frequency, relative_frequency_difference
 from processing.significance import zero_crossings
 
@@ -186,3 +187,18 @@ def predict(imfs: dict[str, pd.DataFrame], nearest_freqs: pd.DataFrame, signal: 
             component_predictions = component_predictions.drop(columns=[component])
 
     return component_predictions
+
+
+def combine_predictions(predictions: dict[float, pd.DataFrame], trend: TrendModel) -> pd.Series:
+    """
+    Combine predictions for each noise value into a single time series
+    :return: dict of noise values to combined time series
+    """
+    by_noise = {noise: pred.sum(axis=1) for noise, pred in predictions.items()}
+
+    total: pd.Series = sum(list(by_noise.values())) / len(by_noise)
+
+    # Add trend back in (no-op if no trend calculated)
+    total += gen_trend(total, trend)
+
+    return total
