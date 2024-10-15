@@ -5,7 +5,6 @@ from tqdm import tqdm
 
 from pipeline.decompose import decompose, reject_noise, detect_trend, gen_trend
 from pipeline.frequencies import match_frequencies
-from pipeline.reconstruct import fit
 from pipeline import steps
 from processing.data import load_data_from_csvs, imf_filename, load_imfs
 from processing.dataclasses import LinRegCoefficients
@@ -90,7 +89,6 @@ if __name__ == '__main__':
         plot_imfs(imf_df.to_numpy().T, f'{signal}-{noise}',
                   output_folder / 'figures' / 'imfs' / f'{signal}_full_imf_{noise}.png')
 
-
     ## Load and re-arrange resulting decompositions
     imfs = load_imfs(imf_dir)
 
@@ -129,8 +127,8 @@ if __name__ == '__main__':
         nearest_freqs[noise].to_csv(output_folder / f'frequencies_{noise}.csv')
 
         # Linear regression of decomposed drivers to decomposed signal
-        coefficients[noise] = fit(imfs_by_noise[noise], nearest_freqs[noise], signal, model='mreg2',
-                                  fit_intercept=True, normalize=normalize_drivers, exclude_trend=exclude_trend)
+        coefficients[noise] = steps.fit(imfs_by_noise[noise], nearest_freqs[noise], signal, model='mreg2',
+                                        fit_intercept=True, normalize=normalize_drivers, exclude_trend=exclude_trend)
 
         # SI 3 figure
         f = paper.fig_si3(imfs_by_noise[noise], nearest_freqs[noise], signal, coefficients[noise],
@@ -139,7 +137,7 @@ if __name__ == '__main__':
 
         # Make predictions for each component of the signal
         predictions_by_noise = steps.predict(imfs_by_noise[noise], nearest_freqs[noise], signal, coefficients[noise],
-                                   start_date, end_date, exclude_trend=exclude_trend)
+                                             start_date, end_date, exclude_trend=exclude_trend)
 
         component_predictions[noise] = predictions_by_noise
         predictions_by_noise.to_csv(output_folder / f'predictions_{noise}.csv')

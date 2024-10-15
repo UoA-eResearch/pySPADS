@@ -12,7 +12,6 @@ from pipeline import steps
 from pipeline.decompose import decompose as _decompose
 from pipeline.frequencies import match_frequencies
 from processing.data import load_imfs, load_data_from_csvs, imf_filename
-from pipeline.reconstruct import fit
 from util.click import OptionNargs
 
 
@@ -114,7 +113,7 @@ def reconstruct(output, signal):
     }
 
     coefs = {
-        noise: fit(imfs_by_noise[noise], nearest_freq[noise], signal)
+        noise: steps.fit(imfs_by_noise[noise], nearest_freq[noise], signal)
         for noise in imfs_by_noise
     }
 

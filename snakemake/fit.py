@@ -1,6 +1,6 @@
 import pandas as pd
 
-from pipeline.reconstruct import fit
+from pipeline import steps
 from processing.data import parse_filename, load_imf
 from visualisation.paper import fig_si3
 
@@ -25,7 +25,7 @@ for fname in snakemake.input.imfs:
 nearest_freq = pd.read_csv(snakemake.input.freqs, index_col=0)
 
 # Linear regression
-coeffs = fit(imfs, nearest_freq, signal, model=model, fit_intercept=fit_intercept, exclude_trend=exclude_trend)
+coeffs = steps.fit(imfs, nearest_freq, signal, model=model, fit_intercept=fit_intercept, exclude_trend=exclude_trend)
 
 # Save
 coeffs.save(snakemake.output.coeffs)
