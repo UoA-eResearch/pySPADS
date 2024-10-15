@@ -9,7 +9,6 @@ from click.testing import CliRunner
 from tqdm import tqdm
 
 from pipeline import steps
-from pipeline.decompose import decompose as _decompose
 from processing.data import load_imfs, load_data_from_csvs, imf_filename
 from util.click import OptionNargs
 
@@ -62,7 +61,7 @@ def decompose(input, output, signal, timecol, noise, overwrite):
             filename = imf_filename(imf_dir, col, ns)
             if not overwrite and filename.exists():
                 continue
-            imf_dfs = _decompose(dfs[col], noise=ns, num_trials=100, progress=False)
+            imf_dfs = steps.decompose(dfs[col], noise=ns, num_trials=100, progress=False)
             imf_dfs.to_csv(filename)
 
 

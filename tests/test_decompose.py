@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from pipeline.decompose import decompose
+from pipeline import steps
 from processing.data import _interpolate, load_data_from_csvs, imf_filename, parse_filename
 from root import ROOT_DIR
 
@@ -61,7 +61,7 @@ class Test(TestCase):
         # Use only a small amount of data for testing
         data = data[:1000]
 
-        imf_df = decompose(data, noise=0.1, num_trials=100, progress=False, parallel=False)
+        imf_df = steps.decompose(data, noise=0.1, num_trials=100, progress=False, parallel=False)
 
         self.assertTrue(all(imf_df.index == data.index), 'Index should be the same as input data')
         # Expect column headers to be integer 0, 1, ...

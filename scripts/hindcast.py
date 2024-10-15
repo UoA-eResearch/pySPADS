@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-from pipeline.decompose import decompose, reject_noise, detect_trend, gen_trend
+from processing.trend import detect_trend, gen_trend
 from pipeline import steps
 from processing.data import load_data_from_csvs, imf_filename, load_imfs
 from processing.dataclasses import LinRegCoefficients
@@ -68,7 +68,7 @@ if __name__ == '__main__':
             else:
                 df = dfs[col].loc[start_date:end_date]
 
-            imf_df = decompose(df, noise=noise, num_trials=100, progress=False, parallel=False)
+            imf_df = steps.decompose(df, noise=noise, num_trials=100, progress=False, parallel=False)
             imf_df.to_csv(filename)
 
             plot_imfs(imf_df.to_numpy().T, f'{col}-{noise}',
@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
         df = dfs[signal].loc[start_date:end_date]
 
-        imf_df = decompose(df, noise=noise, num_trials=100, progress=False, parallel=False)
+        imf_df = steps.decompose(df, noise=noise, num_trials=100, progress=False, parallel=False)
         imf_df.to_csv(filename)
 
         plot_imfs(imf_df.to_numpy().T, f'{signal}-{noise}',
@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
     # Drop IMF modes that are mostly noise
     for label, imf_df in imfs.items():
-        imfs[label] = reject_noise(imf_df, noise_threshold=noise_threshold)
+        imfs[label] = steps.reject_noise(imf_df, noise_threshold=noise_threshold)
 
     # TODO - check which noise value to use
     f = paper.fig2(dfs[signal], imfs[(signal, 0.1)], '1999-01-01', '2017-01-01')
