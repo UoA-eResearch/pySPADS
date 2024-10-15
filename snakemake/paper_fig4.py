@@ -1,5 +1,7 @@
 import json
+from pathlib import Path
 
+from snakemake.script import snakemake
 import pandas as pd
 
 from processing.data import load_data_from_csvs, imf_filename, load_imf
@@ -9,7 +11,7 @@ from visualisation import paper
 signal = snakemake.params.c['signal']
 noises = snakemake.params.c['noises']
 exclude_trend = snakemake.params.c.get('exclude_trend', False)
-imf_folder = snakemake.input.imf_folder
+imf_folder = Path(snakemake.input.folder).parent / 'imfs'
 
 with open(snakemake.input.dates, 'r') as f:
     dates = json.load(f)
@@ -23,7 +25,7 @@ total = total[total.columns[0]]
 
 if exclude_trend:
     # Detrend input signal for plotting
-    filename = imf_filename(imf_folder, f'{signal}_full', min(noises))
+    filename = imf_filename(imf_folder, f'{signal}', min(noises))
     signal_full = load_imf(filename)
     plot_signal = dfs[signal] - signal_full.iloc[:, -1]
 else:

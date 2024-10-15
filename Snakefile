@@ -41,6 +41,11 @@ def expand_config(path):
     return _expand
 
 
+wildcard_constraints:
+    # noise=r'\d+\.\d+',
+    label=r'[a-zA-Z_\-0-9]+'
+    #label=r'^((?!full).)*$'
+
 models = ['mreg2', 'mreg2_intercept', 'linreg', 'linreg_intercept', 'ridge', 'ridge_intercept']
 
 rule all_figures:
@@ -205,7 +210,6 @@ rule paper_fig3_mean:
 rule paper_fig4:
     input:
         folder='input',
-        imf_folder='imfs/',
         predictions='{model}/predictions.csv',
         dates='dates.json'
     output:
