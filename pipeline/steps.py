@@ -70,7 +70,7 @@ def match_frequencies(imfs: dict[str, pd.DataFrame], signal: str, threshold: flo
     """
     # Get the frequency of each component of each imf
     logger.info('Calculating IMF mode frequencies')
-    max_mode = max([imf_df.shape[1] for imf_df in imfs.values()])
+    max_mode = max([max(imf_df.columns) for imf_df in imfs.values()])
     freq_df = pd.DataFrame(index=range(max_mode), columns=list(imfs.keys()))
     for label, imf_df in imfs.items():
         freq_df[label] = component_frequencies(imf_df)

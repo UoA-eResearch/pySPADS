@@ -20,6 +20,8 @@ for fname in snakemake.input.predictions:
     assert noise in noises, f'Expected noise in {noises} but got {noise}'
     preds[noise] = pd.read_csv(fname, index_col=0)
 
+    preds[noise].index = pd.to_datetime(preds[noise].index)
+
 # Combine predictions into single output signal
 signal_trend = TrendModel.load(snakemake.input.trend)
 total = steps.combine_predictions(preds, signal_trend)

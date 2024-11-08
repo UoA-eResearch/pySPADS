@@ -20,4 +20,4 @@ if exclude_trend:
 else:
     signal_trend = TrendModel()
 
-signal_trend.save(snakemake.output.trend)
+signal_trend.save(snakemake.output[0])
