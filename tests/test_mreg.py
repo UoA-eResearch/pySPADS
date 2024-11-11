@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
-from hypothesis import given, settings, assume
+from hypothesis import given, settings
 from hypothesis.strategies import floats, lists, composite
-from pytest import skip
-
-from optimization import mreg2
 from sklearn.linear_model import LinearRegression, Ridge
+
+from optimization import MReg2
+
 
 @composite
 def coeffs_signals_drivers(draw, include_intercept=False, max_coeff=1000):
@@ -43,7 +43,8 @@ def test_mreg_no_intercept(test_data):
     intercept, coeffs, drivers_df, signal_sr = test_data
     assert intercept == 0, "Not expecting to use intercept"
 
-    _coeffs, _ = mreg2(signal_sr, drivers_df, fit_intercept=False)
+    model = MReg2(fit_intercept=False).fit(drivers_df, signal_sr)
+    _coeffs = model.coef_
 
     # Check the coefficients are close
     for i in range(len(coeffs)):
@@ -52,10 +53,13 @@ def test_mreg_no_intercept(test_data):
 
 # @skip("mreg does not work well with intercept")
 @given(coeffs_signals_drivers(include_intercept=True))
+@settings(deadline=None)
 def test_mreg_with_intercept(test_data):
     intercept, coeffs, drivers_df, signal_sr = test_data
 
-    _coeffs, _intercept = mreg2(signal_sr, drivers_df, fit_intercept=True)
+    model = MReg2(fit_intercept=True).fit(drivers_df, signal_sr)
+    _coeffs = model.coef_
+    _intercept = model.intercept_
 
     # Check the coefficients are close
     assert np.isclose(_intercept, intercept, rtol=1e-1, atol=1e-1)
