@@ -11,4 +11,7 @@ def test_issue_i0():
         for label in ['shore', 'Hs', 'Tp', 'Dir']
     ]
 
+    # issue - process isn't completing successfully
     nearest_freq(0.5, config['signal'], config['frequency_threshold'], config['exclude_trend'], imfs)
+    # TODO: unit test modes being calculated correctly
+    

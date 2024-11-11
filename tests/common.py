@@ -36,3 +36,6 @@ def nearest_freq(noise, signal, threshold, exclude_trend, input_imfs, output=Non
     # Save
     if output:
         nearest_freq.to_csv(output)
+
+    # Return value for testing
+    return nearest_freq

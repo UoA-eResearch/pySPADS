@@ -46,16 +46,18 @@ def nearest_frequency(output_freqs: pd.Series, input_freqs: pd.DataFrame) -> pd.
     :return: DataFrame of nearest input IMF mode for each output IMF mode, with one column for each input time series
     """
     input_cols = input_freqs.columns
-    output_index = output_freqs.index[~output_freqs.isna()]
+    output_index = output_freqs.index
 
     result = pd.DataFrame(index=output_index, columns=input_cols)
     with warnings.catch_warnings():
         warnings.simplefilter(action='ignore', category=FutureWarning)
 
         for col in input_cols:
-            result[col] = output_freqs.apply(lambda x: (input_freqs[col] - x).abs().argmin(skipna=True))
+            nearest_index = output_freqs.apply(lambda x: (input_freqs[col] - x).abs().argmin(skipna=True))
+            actual_index = input_freqs.index[nearest_index]
+            result[col] = actual_index
 
-    return result
+    return result[~output_freqs.isna()]
 
 
 def frequency_difference(output_freqs: pd.Series, input_freqs: pd.DataFrame, nearest_freq: pd.DataFrame) \
