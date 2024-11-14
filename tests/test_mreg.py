@@ -35,7 +35,7 @@ def coeffs_signals_drivers(draw, include_intercept=False, max_coeff=1000):
     signal = intercept + np.sum([drivers[f'driver_{i}'] * coeffs[i] for i in range(num_drivers)], axis=0)
     signal_sr = pd.Series(signal)
 
-    return (intercept, coeffs, drivers_df, signal_sr)
+    return intercept, coeffs, drivers_df, signal_sr
 
 
 @given(coeffs_signals_drivers(include_intercept=False))

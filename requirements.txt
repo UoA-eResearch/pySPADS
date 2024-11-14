@@ -16,3 +16,4 @@ mat73
 pydantic==2.7.4
 colorcet
 pytest
+hypothesis
