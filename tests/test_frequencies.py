@@ -4,7 +4,7 @@ from hypothesis import given
 from hypothesis.strategies import floats
 
 from processing.data import load_imfs
-from processing.recomposition import component_frequencies
+from processing.recomposition import component_frequencies, nearest_frequency
 from root import ROOT_DIR
 
 
@@ -43,3 +43,46 @@ def test_component_frequencies(freq):
     assert (min_freq <= freqs['imf'] <= max_freq) or \
         np.isclose(freqs['imf'], min_freq) or np.isclose(freqs['imf'], max_freq), \
         f'Expected frequency to be {freq}, in range {min_freq} - {max_freq}, got {freqs["imf"]}'
+
+
+def test_nearest_frequency():
+    """Check that nearest frequency is calculated correctly"""
+    # Trivial case
+    target_freq = 1.0
+    input_freqs = pd.Series([0.5, 0.8, 1.0, 2.0, 3.0])
+
+    nearest = nearest_frequency(target_freq, input_freqs)
+
+    assert nearest == 2, f'Expected index 2, got {nearest}'
+
+    # Non-trivial: NaNs
+    target_freq = 1.0
+    input_freqs = pd.Series([np.nan, 0.8, 1.0, np.nan, 3.0])
+
+    nearest = nearest_frequency(target_freq, input_freqs)
+
+    assert nearest == 2, f'Expected index 2, got {nearest}'
+
+    # Non-trivial: incomplete index
+    target_freq = 1.0
+    input_freqs = pd.Series([0.5, 0.8, 1.0, 3.0], index=[2, 3, 4, 7])
+
+    nearest = nearest_frequency(target_freq, input_freqs)
+
+    assert nearest == 4, f'Expected index 4, got {nearest}'
+
+    # Non-trivial: multiple matches (expect first)
+    target_freq = 1.0
+    input_freqs = pd.Series([0.5, 0.8, 1.0, 1.0, 3.0])
+
+    nearest = nearest_frequency(target_freq, input_freqs)
+
+    assert nearest == 2, f'Expected index 2, got {nearest}'
+
+    # Non-trivial: non exact match
+    target_freq = 3.2
+    input_freqs = pd.Series([0.5, 2.0, 3.0, 3.6, 7.0])
+
+    nearest = nearest_frequency(target_freq, input_freqs)
+
+    assert nearest == 2, f'Expected index 2, got {nearest}'

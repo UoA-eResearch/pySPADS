@@ -10,7 +10,7 @@ from optimization import MReg2
 from processing.reconstruct import get_X, hindcast_index, get_y
 from processing.dataclasses import LinRegCoefficients, TrendModel
 from processing.trend import gen_trend
-from processing.recomposition import component_frequencies, nearest_frequency, relative_frequency_difference
+from processing.recomposition import component_frequencies, nearest_frequencies, relative_frequency_difference
 from processing.significance import zero_crossings
 
 import logging
@@ -92,7 +92,7 @@ def match_frequencies(imfs: dict[str, pd.DataFrame], signal: str, threshold: flo
 
     # Find the nearest frequency in each input IMF to the frequency of each output mode
     logger.info('Matching signal modes to nearest frequencies in input modes')
-    nearest_freq = nearest_frequency(freq_df[signal], freq_df.drop(columns=[signal]))
+    nearest_freq = nearest_frequencies(freq_df[signal], freq_df.drop(columns=[signal]))
 
     # Check if the nearest frequency is within the threshold
     logger.info('Checking if nearest frequencies are within threshold')

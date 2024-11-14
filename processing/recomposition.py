@@ -38,7 +38,22 @@ def component_frequencies(imfs: pd.DataFrame) -> pd.Series:
     return 365 * imfs.apply(zero_crossings, axis=0) / (2 * t_range.days)
 
 
-def nearest_frequency(output_freqs: pd.Series, input_freqs: pd.DataFrame) -> pd.DataFrame:
+def nearest_frequency(target_freq: float, input_freqs: pd.Series) -> int:
+    """
+    Find the nearest frequency in the input IMF to the target frequency
+    :param target_freq: Frequency to match to
+    :param input_freqs: Frequencies of each input IMF mode
+    :return: Index of the nearest frequency in the input IMF
+    """
+    # Geometric difference between frequencies
+    g_diff = input_freqs / target_freq
+    g_diff[g_diff < 1] = 1 / g_diff[g_diff < 1]
+
+    # Return the index of the minimum difference
+    return g_diff.idxmin()
+
+
+def nearest_frequencies(output_freqs: pd.Series, input_freqs: pd.DataFrame) -> pd.DataFrame:
     """
     Find the nearest frequency in each input IMF to the frequency of each output mode
     :param output_freqs: Frequencies of each output IMF mode
