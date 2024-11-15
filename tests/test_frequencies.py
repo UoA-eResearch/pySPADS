@@ -4,7 +4,7 @@ from hypothesis import given
 from hypothesis.strategies import floats
 
 from processing.data import load_imfs
-from processing.recomposition import component_frequencies, nearest_frequency
+from processing.recomposition import component_frequencies, nearest_frequency, nearest_frequencies
 from root import ROOT_DIR
 
 
@@ -86,3 +86,65 @@ def test_nearest_frequency():
     nearest = nearest_frequency(target_freq, input_freqs)
 
     assert nearest == 2, f'Expected index 2, got {nearest}'
+
+
+def test_nearest_frequencies():
+    """Check that nearest frequencies are calculated correctly"""
+    output_freqs = pd.Series([1.0, 2.0, 3.0, 4.0], index=[1, 2, 3, 4])
+    input_freqs = pd.DataFrame({'x': [0.5, 1.0, 3.0, 4.0],
+                                'y': [0.8, 2.0, 3.0, 4.0],
+                                'z': [0.2, 2.0, 2.5, 10.0]},
+                               index=[1, 2, 3, 4])
+
+    nearest = nearest_frequencies(output_freqs, input_freqs)
+
+    expected = pd.DataFrame({'x': [2, 3, 3, 4],
+                             'y': [1, 2, 3, 4],
+                             'z': [2, 2, 3, 3]},
+                            index=[1, 2, 3, 4])
+
+    assert nearest.equals(expected), f'Expected:\n{expected}\nGot:\n{nearest}'
+
+    # Test with NaNs in output - expect those columns dropped
+    output_freqs = pd.Series([1.0, 2.0, np.nan, 4.0], index=[1, 2, 3, 4])
+
+    nearest = nearest_frequencies(output_freqs, input_freqs)
+
+    expected = pd.DataFrame({'x': [2, 3, 4],
+                                'y': [1, 2, 4],
+                                'z': [2, 2, 3]},
+                                index=[1, 2, 4])
+
+    assert nearest.equals(expected), f'Expected:\n{expected}\nGot:\n{nearest}'
+
+    # Test with NaNs in input - expect other matches
+    output_freqs = pd.Series([1.0, 2.0, 3.0, 4.0], index=[1, 2, 3, 4])
+    input_freqs = pd.DataFrame({'x': [0.5, np.nan, 3.0, 4.0],
+                                'y': [0.8, 2.0, np.nan, 4.0],
+                                'z': [0.2, 2.0, 2.5, np.nan]},
+                               index=[1, 2, 3, 4])
+
+    nearest = nearest_frequencies(output_freqs, input_freqs)
+
+    expected = pd.DataFrame({'x': [1, 3, 3, 4],
+                                'y': [1, 2, 4, 4],
+                                'z': [2, 2, 3, 3]},
+                                index=[1, 2, 3, 4])
+
+    assert nearest.equals(expected), f'Expected:\n{expected}\nGot:\n{nearest}'
+
+    # NaNs in input and output
+    output_freqs = pd.Series([1.0, 2.0, np.nan, 4.0], index=[1, 2, 3, 4])
+    input_freqs = pd.DataFrame({'x': [0.5, np.nan, 3.0, 4.0],
+                                'y': [0.8, 2.0, np.nan, 4.0],
+                                'z': [0.2, 2.0, 2.5, np.nan]},
+                               index=[1, 2, 3, 4])
+
+    nearest = nearest_frequencies(output_freqs, input_freqs)
+
+    expected = pd.DataFrame({'x': [1, 3, 4],
+                                'y': [1, 2, 4],
+                                'z': [2, 2, 3]},
+                                index=[1, 2, 4])
+
+    assert nearest.equals(expected), f'Expected:\n{expected}\nGot:\n{nearest}'

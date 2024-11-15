@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import warnings
 
@@ -68,11 +69,9 @@ def nearest_frequencies(output_freqs: pd.Series, input_freqs: pd.DataFrame) -> p
         warnings.simplefilter(action='ignore', category=FutureWarning)
 
         for col in input_cols:
-            nearest_index = output_freqs.apply(lambda x: (input_freqs[col] - x).abs().argmin(skipna=True))
-            actual_index = input_freqs.index[nearest_index]
-            result[col] = actual_index
+            result[col] = output_freqs.apply(lambda x: nearest_frequency(x, input_freqs[col]))
 
-    return result[~output_freqs.isna()]
+    return result[~output_freqs.isna()].astype(np.int64)
 
 
 def frequency_difference(output_freqs: pd.Series, input_freqs: pd.DataFrame, nearest_freq: pd.DataFrame) \
