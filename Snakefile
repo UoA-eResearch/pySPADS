@@ -28,6 +28,11 @@ def input_columns(wildcards):
     return list(columns)
 
 
+def config_signal(wildcards):
+    config = configuration(wildcards)
+    return config['signal']
+
+
 def config_noises(wildcards):
     config = configuration(wildcards)
     return config['noises']
@@ -63,7 +68,8 @@ rule all_figures:
         # SI Fig 3
         expand('figures/fit_matrix_{model}_{noise}.png', noise=config_noises, model=models),
         # All imfs
-        expand('figures/imfs/{label}_imf_{noise}.png', label=input_columns, noise=config_noises)
+        expand('figures/imfs/{label}_imf_{noise}.png', label=input_columns, noise=config_noises),
+        expand('imfs/full/{signal}_imf_{noise}.csv', signal=config_signal, noise=config_noises),
 
 rule dates:
     # Get timespan for analysis
@@ -110,7 +116,7 @@ rule decompose_full_signal:
         dates='dates.json',
         trend='trend.json'
     output:
-        'imfs/{label}_full_imf_{noise}.csv'
+        'imfs/full/{label}_imf_{noise}.csv'
     params:
         c=configuration,
         full=True
@@ -170,9 +176,9 @@ rule combine_preds:
 # Visualisation
 rule plot_imf:
     input:
-        imf='imfs/{label}_imf_{noise}.csv'
+        imf='imfs/{imf_label}_imf_{noise}.csv'
     output:
-        'figures/imfs/{label}_imf_{noise}.png'
+        'figures/imfs/{imf_label}_imf_{noise}.png'
     script:
         'snakemake/plot_imf.py'
 
