@@ -1,3 +1,5 @@
+import warnings
+
 import pandas as pd
 import numpy as np
 from PyEMD import CEEMDAN
@@ -31,8 +33,11 @@ def decompose(data: pd.Series, noise: float, num_trials: int = 100, progress=Fal
     assert data.index.inferred_type == 'datetime64', 'Index should be datetime'
     assert data.index.is_monotonic_increasing, 'Data must be sorted by time'
 
-    ceemd = CEEMDAN(trials=num_trials, epsilon=noise, processes=8 if parallel else None, parallel=parallel)
-    imfs = ceemd.ceemdan(data.to_numpy(), data.index.to_numpy(), progress=progress)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', category=DeprecationWarning)
+
+        ceemd = CEEMDAN(trials=num_trials, epsilon=noise, processes=8 if parallel else None, parallel=parallel)
+        imfs = ceemd.ceemdan(data.to_numpy(), data.index.to_numpy(), progress=progress)
 
     return pd.DataFrame(imfs.T, index=data.index)
 
