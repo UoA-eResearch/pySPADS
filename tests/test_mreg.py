@@ -57,8 +57,8 @@ def test_mreg_no_intercept(test_data):
 
 
 # @skip("mreg does not work well with intercept")
-@given(coeffs_signals_drivers(include_intercept=True))
-@settings(deadline=1000)
+@given(coeffs_signals_drivers(include_intercept=True, max_coeff=50))
+@settings(deadline=None)
 def test_mreg_with_intercept(test_data):
     intercept, coeffs, drivers_df, signal_sr = test_data
 

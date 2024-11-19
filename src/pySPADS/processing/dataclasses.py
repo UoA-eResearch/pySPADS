@@ -5,8 +5,6 @@ import pandas as pd
 from pydantic import BaseModel
 from typing import Optional
 
-from pydantic.main import Model
-
 
 class SaveLoadBaseModel(BaseModel):
     """Provides save/load convenience function for pydantic models"""
@@ -16,7 +14,7 @@ class SaveLoadBaseModel(BaseModel):
             json.dump(self.model_dump(), f, indent=4)
 
     @classmethod
-    def load(cls: type[Model], path: str) -> Model:
+    def load(cls: type[BaseModel], path: str) -> BaseModel:
         with open(path, "r") as f:
             return cls.model_validate_json(f.read())
 

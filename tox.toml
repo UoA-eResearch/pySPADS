@@ -1,0 +1,23 @@
+requires = ["tox>=4"]
+env_list = ["clean", "lint", "3.13", "3.12", "3.11"]
+
+[env_run_base]
+description = "run unit tests"
+deps = [
+    "pytest>=8",
+    "hypothesis",
+    "pytest-cov",
+]
+commands = [["pytest", "--cov=pySPADS", "--cov-append", { replace = "posargs", default = ["tests"], extend = true }]]
+
+[env.clean]
+description = "clean up previous coverage reports"
+deps = "coverage"
+skip_install = true
+commands = [["coverage", "erase"]]
+
+[env.lint]
+description = "run linter"
+skip_install = true
+deps = ["ruff"]
+commands = [["ruff", "check"]]
