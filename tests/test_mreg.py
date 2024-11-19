@@ -13,11 +13,13 @@ def coeffs_signals_drivers(draw, include_intercept=False, max_coeff=1000):
     Generate random linear coefficients (+ optional intercept), then generate random driver data and a signal using
     those coefficients
     """
-    sensible_floats = (
-        floats(allow_nan=False, allow_infinity=False, allow_subnormal=False,
-               min_value=-max_coeff, max_value=max_coeff)
-        .filter(lambda x: x == 0 or np.abs(x) > 1e-4)
-    )
+    sensible_floats = floats(
+        allow_nan=False,
+        allow_infinity=False,
+        allow_subnormal=False,
+        min_value=-max_coeff,
+        max_value=max_coeff,
+    ).filter(lambda x: x == 0 or np.abs(x) > 1e-4)
 
     coeffs = draw(lists(sensible_floats, min_size=1, max_size=10))
 
@@ -29,10 +31,12 @@ def coeffs_signals_drivers(draw, include_intercept=False, max_coeff=1000):
     num_drivers = len(coeffs)
     num_samples = 1000
 
-    drivers = {f'driver_{i}': np.random.randn(num_samples) for i in range(num_drivers)}
+    drivers = {f"driver_{i}": np.random.randn(num_samples) for i in range(num_drivers)}
     drivers_df = pd.DataFrame(drivers)
 
-    signal = intercept + np.sum([drivers[f'driver_{i}'] * coeffs[i] for i in range(num_drivers)], axis=0)
+    signal = intercept + np.sum(
+        [drivers[f"driver_{i}"] * coeffs[i] for i in range(num_drivers)], axis=0
+    )
     signal_sr = pd.Series(signal)
 
     return intercept, coeffs, drivers_df, signal_sr

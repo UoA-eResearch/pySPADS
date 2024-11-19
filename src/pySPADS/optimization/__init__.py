@@ -32,9 +32,14 @@ class MReg2(LinearModel):
             bb = np.append(bb, reg.intercept_)
 
         # Further optimize fit
-        beta = fmin(calc_sse_all_coef, bb, args=(y.to_numpy(), X.to_numpy(), self.fit_intercept),
-                    maxiter=100000, maxfun=100000,
-                    disp=False)
+        beta = fmin(
+            calc_sse_all_coef,
+            bb,
+            args=(y.to_numpy(), X.to_numpy(), self.fit_intercept),
+            maxiter=100000,
+            maxfun=100000,
+            disp=False,
+        )
 
         if self.fit_intercept:
             self.coef_ = beta[:-1]
