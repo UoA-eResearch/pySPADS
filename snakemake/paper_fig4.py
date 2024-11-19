@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from processing.data import load_data_from_csvs
-from visualisation import paper
+from pySPADS.processing.data import load_data_from_csvs
+from pySPADS.visualisation import paper
 
 # Parameters
 signal = snakemake.params.c['signal']

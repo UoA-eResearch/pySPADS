@@ -1,6 +1,5 @@
-from processing.data import load_data_from_csvs
-from visualisation import paper
-from pathlib import Path
+from pySPADS.processing.data import load_data_from_csvs
+from pySPADS.visualisation import paper
 
 dfs = load_data_from_csvs(snakemake.input.folder, snakemake.params.c['time_col'])
 

@@ -8,12 +8,12 @@ from PyEMD.checks import whitenoise_check
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.preprocessing import StandardScaler
 
-from optimization import MReg2
-from processing.reconstruct import get_X, hindcast_index, get_y
-from processing.dataclasses import LinRegCoefficients, TrendModel
-from processing.trend import gen_trend
-from processing.recomposition import component_frequencies, nearest_frequencies, relative_frequency_difference
-from processing.significance import zero_crossings
+from pySPADS.optimization import MReg2
+from pySPADS.processing.reconstruct import get_X, hindcast_index, get_y
+from pySPADS.processing.dataclasses import LinRegCoefficients, TrendModel
+from pySPADS.processing.trend import gen_trend
+from pySPADS.processing.recomposition import component_frequencies, nearest_frequencies, relative_frequency_difference
+from pySPADS.processing.significance import zero_crossings
 
 import logging
 

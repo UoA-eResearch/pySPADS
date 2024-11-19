@@ -1,8 +1,8 @@
 import pandas as pd
 import re
 
-from pipeline import steps
-from processing.dataclasses import TrendModel
+from pySPADS.pipeline import steps
+from pySPADS.processing.dataclasses import TrendModel
 
 # TODO: pass noise of each file from snakefile, rather than parsing
 noise_pattern = re.compile('predictions_(\d+\.\d+).csv')

@@ -1,8 +1,8 @@
 import pandas as pd
 
-from pipeline import steps
-from processing.data import parse_filename, load_imf
-from visualisation.paper import fig_si3
+from pySPADS.pipeline import steps
+from pySPADS.processing.data import parse_filename, load_imf
+from pySPADS.visualisation.paper import fig_si3
 
 # Parameters
 noise = float(snakemake.wildcards.noise)

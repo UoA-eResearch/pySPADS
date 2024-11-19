@@ -1,5 +1,5 @@
-from pipeline import steps
-from processing.data import load_imf, parse_filename
+from pySPADS.pipeline import steps
+from pySPADS.processing.data import load_imf, parse_filename
 
 # Parameters
 noise = float(snakemake.wildcards.noise)

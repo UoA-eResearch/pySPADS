@@ -1,7 +1,7 @@
 import pandas as pd
 
-from processing.data import load_data_from_csvs, parse_filename, load_imf
-from visualisation import paper
+from pySPADS.processing.data import load_data_from_csvs, parse_filename, load_imf
+from pySPADS.visualisation import paper
 
 dfs = load_data_from_csvs(snakemake.input.folder, snakemake.params.c['time_col'])
 signal = snakemake.params.c['signal']

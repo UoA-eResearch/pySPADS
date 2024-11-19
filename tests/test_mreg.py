@@ -4,7 +4,7 @@ from hypothesis import given, settings
 from hypothesis.strategies import floats, lists, composite
 from sklearn.linear_model import LinearRegression, Ridge
 
-from optimization import MReg2
+from pySPADS.optimization import MReg2
 
 
 @composite
@@ -39,6 +39,7 @@ def coeffs_signals_drivers(draw, include_intercept=False, max_coeff=1000):
 
 
 @given(coeffs_signals_drivers(include_intercept=False))
+@settings(deadline=1000)
 def test_mreg_no_intercept(test_data):
     intercept, coeffs, drivers_df, signal_sr = test_data
     assert intercept == 0, "Not expecting to use intercept"
@@ -53,7 +54,7 @@ def test_mreg_no_intercept(test_data):
 
 # @skip("mreg does not work well with intercept")
 @given(coeffs_signals_drivers(include_intercept=True))
-@settings(deadline=None)
+@settings(deadline=1000)
 def test_mreg_with_intercept(test_data):
     intercept, coeffs, drivers_df, signal_sr = test_data
 

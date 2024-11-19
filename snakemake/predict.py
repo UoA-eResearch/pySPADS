@@ -3,10 +3,10 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from pathlib import Path
 
-from pipeline import steps
-from processing.reconstruct import get_y
-from processing.data import parse_filename, load_imf
-from processing.dataclasses import LinRegCoefficients
+from pySPADS.pipeline import steps
+from pySPADS.processing.reconstruct import get_y
+from pySPADS.processing.data import parse_filename, load_imf
+from pySPADS.processing.dataclasses import LinRegCoefficients
 
 # Parameters
 noise = float(snakemake.wildcards.noise)

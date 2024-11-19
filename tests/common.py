@@ -20,8 +20,8 @@ def read_config(config_file):
 
 def nearest_freq(noise, signal, threshold, exclude_trend, input_imfs, output=None):
     """Replicate snakefile rule nearest_freq.py"""
-    from pipeline import steps
-    from processing.data import load_imf, parse_filename
+    from pySPADS.pipeline import steps
+    from pySPADS.processing.data import load_imf, parse_filename
 
     # Load imfs
     imfs = {}

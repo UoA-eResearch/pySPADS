@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from processing.recomposition import epoch_index_to_datetime
+from pySPADS.processing.recomposition import epoch_index_to_datetime
 
 
 def load_imf(file: Path) -> pd.DataFrame:

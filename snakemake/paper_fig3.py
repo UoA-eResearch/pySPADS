@@ -1,7 +1,7 @@
 import pandas as pd
 from collections import defaultdict
-from processing.data import parse_filename, load_imf
-from visualisation import paper
+from pySPADS.processing.data import parse_filename, load_imf
+from pySPADS.visualisation import paper
 
 # Parameters
 signal = snakemake.params.c['signal']

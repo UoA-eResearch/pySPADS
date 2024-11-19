@@ -6,13 +6,13 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from datetime import datetime
 
-from processing.reconstruct import hindcast_index, get_y, get_X
-from processing.bridge import datenum_to_datetime
+from pySPADS.processing.reconstruct import hindcast_index, get_y, get_X
+from pySPADS.processing.bridge import datenum_to_datetime
 import seaborn as sns
 import colorcet
 
-from processing.dataclasses import LinRegCoefficients
-from processing.recomposition import component_frequencies
+from pySPADS.processing.dataclasses import LinRegCoefficients
+from pySPADS.processing.recomposition import component_frequencies
 
 
 def _mask_datetime(df, start, end):

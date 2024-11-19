@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
-from processing.dataclasses import TrendModel
+from pySPADS.processing.dataclasses import TrendModel
 
 
 def detect_trend(data: pd.Series) -> TrendModel:

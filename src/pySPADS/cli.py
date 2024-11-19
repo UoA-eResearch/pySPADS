@@ -4,16 +4,17 @@ import click
 import pathlib
 
 import pandas as pd
-from click.testing import CliRunner
 from tqdm import tqdm
 
-from pipeline import steps
-from processing.data import load_imfs, load_data_from_csvs, imf_filename
-from processing.dataclasses import TrendModel
-from util.click import OptionNargs
+from pySPADS.pipeline import steps
+from pySPADS.processing.data import load_imfs, load_data_from_csvs, imf_filename
+from pySPADS.processing.dataclasses import TrendModel
+from pySPADS.util.click import OptionNargs
+from . import __version__
 
 
 @click.group()
+@click.version_option(__version__)
 def cli():
     pass
 

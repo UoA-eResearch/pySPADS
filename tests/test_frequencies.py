@@ -3,14 +3,14 @@ import pandas as pd
 from hypothesis import given
 from hypothesis.strategies import floats
 
-from processing.data import load_imfs
-from processing.recomposition import component_frequencies, nearest_frequency, nearest_frequencies
-from root import ROOT_DIR
+from pySPADS.processing.data import load_imfs
+from pySPADS.processing.recomposition import component_frequencies, nearest_frequency, nearest_frequencies
+from tests.common import dpath
 
 
 def test_load_imfs():
     """Check that loading IMFs from a folder works as expected"""
-    folder = ROOT_DIR / 'tests' / 'data' / 'imfs'
+    folder = dpath('data/imfs')
     assert folder.exists()
 
     imfs = load_imfs(folder)

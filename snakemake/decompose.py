@@ -1,9 +1,9 @@
 import json
 
-from pipeline import steps
-from processing.data import load_data_from_csvs
-from processing.dataclasses import TrendModel
-from processing.trend import gen_trend
+from pySPADS.pipeline import steps
+from pySPADS.processing.data import load_data_from_csvs
+from pySPADS.processing.dataclasses import TrendModel
+from pySPADS.processing.trend import gen_trend
 
 # Load data
 dfs = load_data_from_csvs(snakemake.input.folder, snakemake.params.c['time_col'])

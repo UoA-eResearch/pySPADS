@@ -1,5 +1,5 @@
 import json
-from processing.data import load_data_from_csvs
+from pySPADS.processing.data import load_data_from_csvs
 
 signal = snakemake.params.c['signal']
 dfs = load_data_from_csvs(snakemake.input.folder, snakemake.params.c['time_col'])

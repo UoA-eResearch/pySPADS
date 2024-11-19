@@ -2,9 +2,9 @@ import itertools
 
 import pandas as pd
 
-from pipeline import steps
-from processing.data import _interpolate, load_data_from_csvs, imf_filename, parse_filename
-from root import ROOT_DIR
+from pySPADS.pipeline import steps
+from pySPADS.processing.data import _interpolate, load_data_from_csvs, imf_filename, parse_filename
+from tests.common import dpath
 
 
 def test_interpolate():
@@ -33,7 +33,7 @@ def test_interpolate():
 
 
 def test_load_separate_files():
-    folder = ROOT_DIR / 'data' / 'separate_files'
+    folder = dpath('data/separate_files')
     assert folder.exists()
 
     data = load_data_from_csvs(folder)
@@ -51,7 +51,7 @@ def test_load_separate_files():
 
 def test_decompose():
     """Check that decomposition results in expected data"""
-    file = ROOT_DIR / 'data' / 'separate_files' / 'shore.csv'
+    file = dpath('data/separate_files/shore.csv')
     data = load_data_from_csvs(file)['shore']
 
     # Use only a small amount of data for testing
@@ -70,7 +70,7 @@ def test_decompose():
 
 def test_imf_filename():
     """Check that the filename is generated correctly"""
-    output_dir = ROOT_DIR / 'data' / 'imfs'
+    output_dir = dpath('data/imfs')
 
     filename = imf_filename(output_dir, 'shore', 0.1)
     assert filename == output_dir / 'shore_imf_0.1.csv', 'Incorrect formatted filename'
@@ -82,7 +82,7 @@ def test_imf_filename():
 
 def test_parse_filaname():
     """Check that the filename is parsed correctly"""
-    filename = ROOT_DIR / 'data' / 'imfs' / 'shore_imf_0.1.csv'
+    filename = dpath('data/imfs/shore_imf_0.1.csv')
     label, noise = parse_filename(filename)
 
     assert label == 'shore', 'Incorrect label parsed'
@@ -92,7 +92,7 @@ def test_parse_filaname():
         ['shore', 'test', 'a_', '_b', '_c__'],
         [0, 0.1, 0.123456789]
     ):
-        filename = imf_filename(ROOT_DIR / 'data' / 'imfs', label, noise)
+        filename = imf_filename(dpath('data/imfs'), label, noise)
         parsed_label, parsed_noise = parse_filename(filename)
         assert label == parsed_label, f'Incorrect label parsed for filename {filename}'
         assert noise == parsed_noise, f'Incorrect noise parsed for filename {filename}'

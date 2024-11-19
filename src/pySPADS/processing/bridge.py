@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.io import loadmat
 
-from root import ROOT_DIR
+from pySPADS.root import ROOT_DIR
 
 # This file contains functions to work with data in matlab format, as a bridge to working with raw GIS data
 data_dir = ROOT_DIR / 'data' / 'matlab'

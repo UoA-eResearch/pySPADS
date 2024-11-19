@@ -3,12 +3,12 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-from processing.trend import detect_trend, gen_trend
-from pipeline import steps
-from processing.data import load_data_from_csvs, imf_filename, load_imfs
-from processing.dataclasses import LinRegCoefficients, TrendModel
-from visualisation import paper
-from visualisation.imfs import plot_imfs
+from pySPADS.processing.trend import detect_trend, gen_trend
+from pySPADS.pipeline import steps
+from pySPADS.processing.data import load_data_from_csvs, imf_filename, load_imfs
+from pySPADS.processing.dataclasses import LinRegCoefficients, TrendModel
+from pySPADS.visualisation import paper
+from pySPADS.visualisation.imfs import plot_imfs
 
 if __name__ == '__main__':
     run_label = 'run1'
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     for noise in tqdm(noises, desc='Reconstructing signal'):
         # Match signal components to nearest driver components by frequency
         nearest_freqs[noise] = steps.match_frequencies(imfs_by_noise[noise], signal, frequency_threshold,
-                                                 exclude_trend=exclude_trend)
+                                                       exclude_trend=exclude_trend)
         nearest_freqs[noise].to_csv(output_folder / f'frequencies_{noise}.csv')
 
         # Linear regression of decomposed drivers to decomposed signal
