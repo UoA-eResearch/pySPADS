@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Self
 
 
 class SaveLoadBaseModel(BaseModel):
@@ -14,7 +14,7 @@ class SaveLoadBaseModel(BaseModel):
             json.dump(self.model_dump(), f, indent=4)
 
     @classmethod
-    def load(cls: type[BaseModel], path: str) -> BaseModel:
+    def load(cls: Self, path: str) -> Self:
         with open(path, "r") as f:
             return cls.model_validate_json(f.read())
 

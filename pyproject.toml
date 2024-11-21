@@ -51,6 +51,3 @@ pySPADS = "pySPADS.cli:cli"
 [build-system]
 requires = ["flit_core >=3.4,<4"]
 build-backend = "flit_core.buildapi"
-
-[tool.ruff.lint]
-per-file-ignores = { "snakemake/*.py" = ["F821"] }  # Suppress undefined "snakemake" in snakemake scripts

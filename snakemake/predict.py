@@ -8,12 +8,16 @@ from pySPADS.processing.reconstruct import get_y
 from pySPADS.processing.data import parse_filename, load_imf
 from pySPADS.processing.dataclasses import LinRegCoefficients
 
-# Parameters
-noise = float(snakemake.wildcards.noise)
-signal = snakemake.params.c["signal"]
-exclude_trend = snakemake.params.c.get("exclude_trend", False)
+# snakemake is not defined until runtime, so we need to disable the warning:
+_snakemake = snakemake  # noqa: F821
 
-with open(snakemake.input.dates, "r") as f:
+# Parameters
+noise = float(_snakemake.wildcards.noise)
+signal = _snakemake.params.c["signal"]
+exclude_trend = _snakemake.params.c.get("exclude_trend", False)
+
+# Load data
+with open(_snakemake.input.dates, "r") as f:
     dates = json.load(f)
 
 # TODO: should we be predicting from start-end or hindcast-end?
@@ -22,16 +26,16 @@ end_date = dates["end"]
 
 # Load imfs
 imfs = {}
-for fname in snakemake.input.imfs:
+for fname in _snakemake.input.imfs:
     label, imf_noise = parse_filename(fname)
     assert imf_noise == noise, f"Expected noise {noise} but got {imf_noise}"
     imfs[label] = load_imf(fname)
 
 # Load nearest frequency
-nearest_freq = pd.read_csv(snakemake.input.freqs, index_col=0)
+nearest_freq = pd.read_csv(_snakemake.input.freqs, index_col=0)
 
 # Load coefficients
-coeffs = LinRegCoefficients.load(snakemake.input.coeffs)
+coeffs = LinRegCoefficients.load(_snakemake.input.coeffs)
 
 # Make predictions
 component_predictions = steps.predict(
@@ -49,7 +53,7 @@ for component in component_predictions.columns:
     plt.legend()
     plt.title(f"Noise {noise}, Component {component}")
     fname = (
-        Path(snakemake.output[0]).parent
+        Path(_snakemake.output[0]).parent
         / "figures"
         / "predictions"
         / f"pred_{noise}_{component}.png"
@@ -58,4 +62,4 @@ for component in component_predictions.columns:
     plt.savefig(fname)
 
 # Save
-component_predictions.to_csv(snakemake.output[0])
+component_predictions.to_csv(_snakemake.output[0])

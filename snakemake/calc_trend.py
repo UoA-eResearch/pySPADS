@@ -4,14 +4,17 @@ from pySPADS.processing.data import load_data_from_csvs
 from pySPADS.processing.dataclasses import TrendModel
 from pySPADS.processing.trend import detect_trend
 
-# Load data
-dfs = load_data_from_csvs(snakemake.input.folder, snakemake.params.c["time_col"])
+# snakemake is not defined until runtime, so we need to disable the warning:
+_snakemake = snakemake  # noqa: F821
 
-with open(snakemake.input.dates, "r") as f:
+# Load data
+dfs = load_data_from_csvs(_snakemake.input.folder, _snakemake.params.c["time_col"])
+
+with open(_snakemake.input.dates, "r") as f:
     dates = json.load(f)
 
-signal = snakemake.params.c["signal"]
-exclude_trend = snakemake.params.c.get("exclude_trend", False)
+signal = _snakemake.params.c["signal"]
+exclude_trend = _snakemake.params.c.get("exclude_trend", False)
 
 # If exlcuding trend, calculate it, otherwise use default no-op trend
 if exclude_trend:
@@ -20,4 +23,4 @@ if exclude_trend:
 else:
     signal_trend = TrendModel()
 
-signal_trend.save(snakemake.output[0])
+signal_trend.save(_snakemake.output[0])

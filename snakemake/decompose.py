@@ -5,38 +5,42 @@ from pySPADS.processing.data import load_data_from_csvs
 from pySPADS.processing.dataclasses import TrendModel
 from pySPADS.processing.trend import gen_trend
 
+# snakemake is not defined until runtime, so we need to disable the warning:
+_snakemake = snakemake  # noqa: F821
+
 # Load data
-dfs = load_data_from_csvs(snakemake.input.folder, snakemake.params.c["time_col"])
+dfs = load_data_from_csvs(_snakemake.input.folder, _snakemake.params.c["time_col"])
 
 # Select date range (differs if hindcasting signal)
-with open(snakemake.input.dates, "r") as f:
+with open(_snakemake.input.dates, "r") as f:
     dates = json.load(f)
 
-label = snakemake.wildcards.label
-signal = snakemake.params.c["signal"]
-exclude_trend = snakemake.params.c.get("exclude_trend", False)
+label = _snakemake.wildcards.label
+signal = _snakemake.params.c["signal"]
+reject_noise = _snakemake.params.c.get("reject_noise", False)
+exclude_trend = _snakemake.params.c.get("exclude_trend", False)
 
-if label == signal and not snakemake.params.full:
+if label == signal and not _snakemake.params.full:
     # TODO: handle both hindcast and forecast - make explicit what date range is considered
     df = dfs[label].loc[dates["start"] : dates["hindcast"]]
 else:
     df = dfs[label].loc[dates["start"] : dates["end"]]
 
 if label == signal and exclude_trend:
-    signal_trend = TrendModel.load(snakemake.input.trend)
+    signal_trend = TrendModel.load(_snakemake.input.trend)
     df -= gen_trend(df, signal_trend)
 
 # Decompose
-noise = float(snakemake.wildcards.noise)
+noise = float(_snakemake.wildcards.noise)
 imf_df = steps.decompose(
     df, noise=noise, num_trials=100, progress=False, parallel=False
 )
 
 # Optionally reject modes that are mostly noise
-if snakemake.params.c["noise_threshold"] is not None:
+if reject_noise:
     imf_df = steps.reject_noise(
-        imf_df, noise_threshold=snakemake.params.c["noise_threshold"]
+        imf_df, noise_threshold=_snakemake.params.c["noise_threshold"]
     )
 
 # Save result
-imf_df.to_csv(snakemake.output[0])
+imf_df.to_csv(_snakemake.output[0])
