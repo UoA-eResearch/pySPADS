@@ -39,6 +39,7 @@ test = [
 ]
 dev = [
     "mat73==0.62",
+    "spinx",
 ]
 
 [project.urls]
