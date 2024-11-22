@@ -9,7 +9,7 @@ from tqdm import tqdm
 from pySPADS.pipeline import steps
 from pySPADS.processing.data import load_imfs, load_data_from_csvs, imf_filename
 from pySPADS.processing.dataclasses import TrendModel
-from pySPADS.util.click import OptionNargs
+from pySPADS.util.click import OptionNargs, parse_noise_args
 from . import __version__
 
 
@@ -26,12 +26,6 @@ def cli():
 def run(path):
     """Run the full pipeline"""
     print("Not implemented")
-
-
-def _parse_noise(ctx, param, value):
-    if value is None:
-        return (0.25,)
-    return tuple(float(n) for n in value)
 
 
 @cli.command()
@@ -57,13 +51,23 @@ def _parse_noise(ctx, param, value):
     "--noise",
     cls=OptionNargs,
     type=tuple[float],
-    callback=_parse_noise,
+    callback=parse_noise_args,
     help="Noise values use when decomposing IMFs",
 )
 @click.option(
+    "--reject-noise", is_flag=True, help="Reject IMF modes containing mostly noise", default=False
+)
+@click.option(
+    "--noise-threshold",
+    type=float,
+    default=0.95,
+    help="Threshold for rejecting IMF modes containing noise",
+)
+
+@click.option(
     "--overwrite", is_flag=True, help="Overwrite existing IMF files in output directory"
 )
-def decompose(input, output, signal, timecol, noise, overwrite):
+def decompose(input, output, signal, timecol, noise, reject_noise, noise_threshold, overwrite):
     """Decompose input data into IMFs"""
     # Load data
     print(f"Loading data from {input}")
@@ -85,6 +89,10 @@ def decompose(input, output, signal, timecol, noise, overwrite):
             imf_dfs = steps.decompose(
                 dfs[col], noise=ns, num_trials=100, progress=False
             )
+            # Optionally reject modes that are mostly noise
+            if reject_noise:
+                imf_dfs = steps.reject_noise(imf_dfs, noise_threshold=noise_threshold)
+
             imf_dfs.to_csv(filename)
 
 
@@ -98,15 +106,6 @@ def decompose(input, output, signal, timecol, noise, overwrite):
     help="Output directory",
 )
 @click.option("-s", "--signal", type=str, help="Column name of signal to fit to")
-@click.option(
-    "--reject-noise", is_flag=True, help="Reject IMF modes containing mostly noise"
-)
-@click.option(
-    "--noise-threshold",
-    type=float,
-    default=0.95,
-    help="Threshold for rejecting IMF modes containing noise",
-)
 @click.option(
     "--frequency-threshold",
     type=float,
