@@ -10,4 +10,5 @@ This documentation is a work in progress, and will be expanded as the project de
    :caption: Contents:
 
    usage
+   changelog
 
