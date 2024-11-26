@@ -6,9 +6,10 @@ pySPADS documentation
 This documentation is a work in progress, and will be expanded as the project develops. Currently, the most useful reference for using pySPADS is the `example script hindcast.py <https://github.com/UoA-eResearch/pySPADS/blob/main/scripts/hindcast.py>`_.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    usage
+   cli
    changelog
 

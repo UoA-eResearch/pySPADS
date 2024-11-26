@@ -41,6 +41,7 @@ dev = [
     "mat73==0.62",
     "spinx",
     "sphinx_rtd_theme",
+    "sphinx-click"
 ]
 
 [project.urls]

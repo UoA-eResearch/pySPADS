@@ -14,9 +14,9 @@ Usage
 -----
 
 There are three main ways to use pySPADS:
-- As a command line interface (CLI) tool (work in progress, not yet recommended)
-- As a Python package, by importing the relevant modules and functions into your own script (recommended)
-- By using `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_ to create and run a pipeline
+* As a :doc:`command line interface (CLI)<cli>` tool (work in progress, not yet recommended)
+* As a Python package, by importing the relevant modules and functions into your own script (recommended)
+* By using `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_ to create and run a pipeline
 
 Scripting
 ---------
