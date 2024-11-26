@@ -11,30 +11,37 @@ from pySPADS.visualisation import paper
 from pySPADS.visualisation.imfs import plot_imfs
 
 if __name__ == "__main__":
-    run_label = "run1"
+    run_label = "example_run"
 
+    # Setup input/output folders
+    # Note - the folder structure used here mirrors that in the snakemake scripts, but does not need to.
     input_folder = Path(__file__).parent.parent / "data" / run_label / "input"
     output_folder = Path(__file__).parent.parent / "data" / run_label
-    output_folder.mkdir(parents=True, exist_ok=True)
+    figure_folder = output_folder / "figures"
+    figure_folder.mkdir(parents=True, exist_ok=True)
 
     # Load input data
-    time_col = "t"
+    time_col = "t"  # Label of the datetime column in each of the input data files
     dfs = load_data_from_csvs(input_folder, time_col)
 
     # Setup info needed to perform analysis
     signal = "shore"
     noises = [0.1, 0.2, 0.3, 0.4, 0.5]
-    frequency_threshold = 0.25
-    noise_threshold = 0.95
-    exclude_trend = True
-    normalize_drivers = False
+    frequency_threshold = 0.25  # How close a driver frequency must be to the signal frequency, geometrically
+    noise_threshold = 0.95  # Threshold for rejecting IMF modes containing noise - see Wu & Huang 2004
+    exclude_trend = True  # Whether to detrend the signal before analysis
+    normalize_drivers = False  # Whether to normalise drivers before fitting
 
+    # List of driver columns
     drivers = list(set(dfs.keys()) - {signal})
 
+    # Date ranges
     # decompose from earliest available date to latest date available for all input data
     start_date = min([min(df.index) for df in dfs.values()])
     end_date = min([max(df.index) for df in dfs.values()])
-    # date from which to hindcast signal
+    # For a hindcast, we want to make a prediction from before the end of our signal data, so that we can compare
+    # the prediction to the actual signal data. For a forecast, you would predict from the end of the signal data, to
+    # the end of the driver data.
     hindcast_date = pd.Timestamp("2012-01-01")
 
     # De-trend signal data, and calculate linear regression to re-trend after prediction
@@ -50,14 +57,13 @@ if __name__ == "__main__":
         signal_trend = TrendModel()
 
     # Replicate figures from paper
-    (output_folder / "figures").mkdir(parents=True, exist_ok=True)
     if "PC0" in drivers:  # Skip figure 1 if missing PCA data
         f = paper.fig1(
             dfs["PC0"], dfs["Hs"], dfs["Tp"], dfs["Dir"], "2004-01-01", "2016-01-01"
         )
-        f.savefig(output_folder / "figures" / "fig1.png")
+        f.savefig(figure_folder / "fig1.png")
 
-    # Perform decomposition (warning: takes ~4 hours)
+    # Perform decomposition (warning: may take several hours)
     imf_dir = output_folder / "imfs"
     imf_dir.mkdir(parents=True, exist_ok=True)
 
@@ -78,10 +84,11 @@ if __name__ == "__main__":
             )
             imf_df.to_csv(filename)
 
+            # Save plots of each decomposed timeseries
             plot_imfs(
                 imf_df.to_numpy().T,
                 f"{col}-{noise}",
-                output_folder / "figures" / "imfs" / f"{col}_imf_{noise}.png",
+                figure_folder / "imfs" / f"{col}_imf_{noise}.png",
             )
 
     # Additional full decomposition of signal, for plots
@@ -100,26 +107,20 @@ if __name__ == "__main__":
         plot_imfs(
             imf_df.to_numpy().T,
             f"{signal}-{noise}",
-            output_folder / "figures" / "imfs" / f"{signal}_full_imf_{noise}.png",
+            figure_folder / "imfs" / "full" / f"{signal}_imf_{noise}.png",
         )
 
-    ## Load and re-arrange resulting decompositions
+    # Load resulting decompositions
     imfs = load_imfs(imf_dir)
 
-    # Filter out signal_full imfs
-    imfs = {
-        (label, noise): imf
-        for (label, noise), imf in imfs.items()
-        if label != f"{signal}_full"
-    }
-
     # Drop IMF modes that are mostly noise
-    for label, imf_df in imfs.items():
-        imfs[label] = steps.reject_noise(imf_df, noise_threshold=noise_threshold)
+    if noise_threshold is not None:
+        for label, imf_df in imfs.items():
+            imfs[label] = steps.reject_noise(imf_df, noise_threshold=noise_threshold)
 
-    # TODO - check which noise value to use
+    # Replicate figures from paper
     f = paper.fig2(dfs[signal], imfs[(signal, 0.1)], "1999-01-01", "2017-01-01")
-    f.savefig(output_folder / "figures" / "fig2.png")
+    f.savefig(figure_folder / "fig2.png")
 
     # Re-organise imfs into dict[noise][label]
     imfs_by_noise: dict[float, dict[str, pd.DataFrame]] = {}
@@ -128,11 +129,12 @@ if __name__ == "__main__":
             imfs_by_noise[noise] = {}
         imfs_by_noise[noise][label] = imfs[(label, noise)]
 
+    # Replicate figures from paper
     if "PC0" in drivers:  # Skip figure 3 if missing PCA data
         f = paper.fig3(imfs_by_noise[0.1], f"{signal}", "1999-01-01", "2017-01-01")
-        f.savefig(output_folder / "figures" / "fig3.png")
+        f.savefig(figure_folder / "fig3.png")
 
-    ## Reconstruct signal (including hindcast) from drivers
+    # Reconstruct signal (including hindcast) from drivers
     nearest_freqs: dict[float, pd.DataFrame] = {}
     coefficients: dict[float, LinRegCoefficients] = {}
     component_predictions: dict[float, pd.DataFrame] = {}
@@ -157,7 +159,7 @@ if __name__ == "__main__":
             normalize=normalize_drivers,
         )
 
-        # SI 3 figure
+        # Replicate figure from supplementary material: SI figure 3
         f = paper.fig_si3(
             imfs_by_noise[noise],
             nearest_freqs[noise],
@@ -166,7 +168,7 @@ if __name__ == "__main__":
             annotate_coeffs=True,
             exclude_trend=exclude_trend,
         )
-        f.savefig(output_folder / "figures" / f"fig_si3_{noise}.png")
+        f.savefig(figure_folder / f"fig_si3_{noise}.png")
 
         # Make predictions for each component of the signal
         predictions_by_noise = steps.predict(
@@ -189,5 +191,6 @@ if __name__ == "__main__":
     # Add trend back into signal for plotting
     plot_signal = dfs[signal] + gen_trend(dfs[signal], signal_trend)
 
+    # Replicate figure from paper
     f = paper.fig4(plot_signal, total, "2000-01-01", "2019-12-31", hindcast_date)
-    f.savefig(output_folder / "figures" / "fig4.png")
+    f.savefig(figure_folder / "fig4.png")
