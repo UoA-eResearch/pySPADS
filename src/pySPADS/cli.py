@@ -20,20 +20,11 @@ def cli():
 
 
 @cli.command()
-@click.argument(
-    "path", type=click.Path(exists=True, file_okay=False, path_type=pathlib.Path)
-)
-def run(path):
-    """Run the full pipeline"""
-    print("Not implemented")
-
-
-@cli.command()
 @click.option(
     "-i",
     "--input",
     type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=pathlib.Path),
-    help="Input data file or directory, expects either a csv, or a directory of csvs",
+    help="Input data file or directory, expects either a .csv, or a directory containing .csvs",
     required=True,
 )
 @click.option(
@@ -52,22 +43,20 @@ def run(path):
     cls=OptionNargs,
     type=tuple[float],
     callback=parse_noise_args,
-    help="Noise values use when decomposing IMFs",
-)
-@click.option(
-    "--reject-noise", is_flag=True, help="Reject IMF modes containing mostly noise", default=False
+    help="Noise values to use when decomposing IMFs",
 )
 @click.option(
     "--noise-threshold",
     type=float,
-    default=0.95,
+    default=None,
     help="Threshold for rejecting IMF modes containing noise",
 )
-
 @click.option(
-    "--overwrite", is_flag=True, help="Overwrite existing IMF files in output directory"
+    "--overwrite", is_flag=False, help="Overwrite existing IMF files in output directory"
 )
-def decompose(input, output, signal, timecol, noise, reject_noise, noise_threshold, overwrite):
+def decompose(
+    input, output, signal, timecol, noise, noise_threshold, overwrite
+):
     """Decompose input data into IMFs"""
     # Load data
     print(f"Loading data from {input}")
@@ -90,7 +79,7 @@ def decompose(input, output, signal, timecol, noise, reject_noise, noise_thresho
                 dfs[col], noise=ns, num_trials=100, progress=False
             )
             # Optionally reject modes that are mostly noise
-            if reject_noise:
+            if noise_threshold is not None:
                 imf_dfs = steps.reject_noise(imf_dfs, noise_threshold=noise_threshold)
 
             imf_dfs.to_csv(filename)
