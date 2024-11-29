@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import numpy as np
@@ -24,6 +25,9 @@ def load_imf(file: Path) -> pd.DataFrame:
     return imf
 
 
+_imf_filename_pattern = re.compile(r"(.+)_imf_(\d+\.\d+)\.csv")
+
+
 def load_imfs(folder: Path) -> dict[tuple[str, float], pd.DataFrame]:
     """
     Load IMFs from a folder, parse label and noise from filenames
@@ -33,6 +37,9 @@ def load_imfs(folder: Path) -> dict[tuple[str, float], pd.DataFrame]:
     assert folder.is_dir(), f"Folder {folder} does not exist"
     imfs = {}
     for file in folder.glob("*.csv"):
+        if not _imf_filename_pattern.match(file.stem):
+            print(f"Skipping file {file} - does not appear to be an imf file")
+            continue
         label, noise = parse_filename(file)
         imfs[(label, noise)] = load_imf(file)
 

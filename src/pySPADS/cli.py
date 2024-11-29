@@ -106,24 +106,37 @@ def decompose(
 
 
 @cli.command()
+@click.argument("imf_dir", type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path), nargs=1)
 @click.option(
     "-o",
     "--output",
     type=click.Path(
         exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    help="Output directory",
+    help="Output directory, defaults to current directory",
 )
 @click.option("-s", "--signal", type=str, help="Column name of signal to fit to")
 @click.option(
     "--frequency-threshold",
     type=float,
     default=0.25,
-    help="Threshold for accepting IMF modes with similar frequencies to signal frequency",
+    help="Threshold for accepting IMF modes with similar frequencies to signal frequency, default=0.25",
 )
-def match(output, signal, reject_noise, noise_threshold, frequency_threshold):
-    """Match IMFs to each other"""
-    imfs = load_imfs(output / "imfs")
+def match(imf_dir, output, signal, frequency_threshold):
+    """
+    Matches each component mode of the signal to component modes of each driver with similar frequencies
+
+    IMF_DIR is the directory containing the IMF files, which should be named <column_name>_imf_<noise>.csv
+
+    The output will be a CSV file for each noise value, named <output>/frequencies_<noise>.csv
+    """
+    # Load IMFs
+    imfs = load_imfs(imf_dir)
+
+    # Output folder
+    if output is None:
+        output = pathlib.Path.cwd()
+    output.mkdir(parents=True, exist_ok=True)
 
     # Re-organise imfs into dict[noise][label]
     imfs_by_noise = defaultdict(dict)
