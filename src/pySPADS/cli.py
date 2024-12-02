@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from pySPADS.pipeline import steps
 from pySPADS.processing.data import load_imfs, load_data_from_csvs, imf_filename
-from pySPADS.processing.dataclasses import TrendModel
+from pySPADS.processing.dataclasses import TrendModel, LinRegCoefficients
 from pySPADS.util.click import OptionNargs, parse_noise_args
 from . import __version__
 
@@ -20,7 +20,11 @@ def cli():
 
 
 @cli.command()
-@click.argument("files", type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=pathlib.Path), nargs=-1)
+@click.argument(
+    "files",
+    type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=pathlib.Path),
+    nargs=-1,
+)
 @click.option(
     "-o",
     "--output",
@@ -47,9 +51,7 @@ def cli():
 @click.option(
     "--overwrite", is_flag=True, help="Overwrite existing IMF files in output directory"
 )
-def decompose(
-    files, output, timecol, noise, noise_threshold, overwrite
-):
+def decompose(files, output, timecol, noise, noise_threshold, overwrite):
     """
     Decompose input data into IMFs
 
@@ -71,7 +73,9 @@ def decompose(
     for file in files:
         loaded = load_data_from_csvs(file, timecol)
         for key in loaded:
-            assert key not in dfs, f"Duplicate column {key} found in input from file {file}"
+            assert (
+                key not in dfs
+            ), f"Duplicate column {key} found in input from file {file}"
         dfs.update(loaded)
 
     print(
@@ -84,9 +88,12 @@ def decompose(
     output.mkdir(parents=True, exist_ok=True)
 
     # Check if files are in output directory
-    if any([output == file.parent for file in files if file.is_file()]) \
-            or any([output == file for file in files if file.is_dir()]):
-        print("WARNING: Some or all input files are in the output directory, this may lead to confusing file names.")
+    if any([output == file.parent for file in files if file.is_file()]) or any(
+        [output == file for file in files if file.is_dir()]
+    ):
+        print(
+            "WARNING: Some or all input files are in the output directory, this may lead to confusing file names."
+        )
 
     # Decompose each timeseries and save result
     for col in tqdm(dfs, desc="Decomposing IMFs"):
@@ -106,7 +113,13 @@ def decompose(
 
 
 @cli.command()
-@click.argument("imf_dir", type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path), nargs=1)
+@click.argument(
+    "imf_dir",
+    type=click.Path(
+        exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
+    ),
+    nargs=1,
+)
 @click.option(
     "-o",
     "--output",
@@ -154,15 +167,53 @@ def match(imf_dir, output, signal, frequency_threshold):
 
 
 @cli.command()
-@click.argument('imf_dir', type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path), nargs=1)
-@click.argument('frequency_dir', type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path), nargs=1)
-@click.option("-o", "--output", type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path), help="Output directory, defaults to current directory")
+@click.argument(
+    "imf_dir",
+    type=click.Path(
+        exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
+    ),
+    nargs=1,
+)
+@click.argument(
+    "frequency_dir",
+    type=click.Path(
+        exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
+    ),
+    nargs=1,
+)
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(
+        exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path
+    ),
+    help="Output directory, defaults to current directory",
+)
 @click.option("-s", "--signal", type=str, help="Column name of signal to fit to")
-@click.option('-n', '--noises', cls=OptionNargs, type=tuple[float], callback=parse_noise_args, help="Noise values to use when fitting IMFs, defaults to all noises present in IMF_DIR, e.g. -n 0.1 0.2 0.3")
-@click.option('-m', '--model', type=str, default="mreg2", help="Model to use for fitting linear regression, one of mreg2, linreg, ridge")
-@click.option('--fit-intercept', is_flag=True, help="Fit intercept in linear regression model")
-@click.option('--normalize', is_flag=True, help="Normalize input data in linear regression model")
-def fit(imf_dir, frequency_dir, output, signal, noises, model, fit_intercept, normalize):
+@click.option(
+    "-n",
+    "--noises",
+    cls=OptionNargs,
+    type=tuple[float],
+    callback=parse_noise_args,
+    help="Noise values to use when fitting IMFs, defaults to all noises present in IMF_DIR, e.g. -n 0.1 0.2 0.3",
+)
+@click.option(
+    "-m",
+    "--model",
+    type=str,
+    default="mreg2",
+    help="Model to use for fitting linear regression, one of mreg2, linreg, ridge",
+)
+@click.option(
+    "--fit-intercept", is_flag=True, help="Fit intercept in linear regression model"
+)
+@click.option(
+    "--normalize", is_flag=True, help="Normalize input data in linear regression model"
+)
+def fit(
+    imf_dir, frequency_dir, output, signal, noises, model, fit_intercept, normalize
+):
     """
     Fit a linear model expressing each component of the signal as a linear combination of the components of the drivers
 
@@ -173,16 +224,6 @@ def fit(imf_dir, frequency_dir, output, signal, noises, model, fit_intercept, no
     FREQUENCY_DIR is the directory containing the frequency files, which should be named frequencies_<noise>.csv
             if omitted, this defaults to ./frequencies
     """
-    # Input/output directories
-    if imf_dir is None:
-        imf_dir = pathlib.Path.cwd() / "imfs"
-
-    if frequency_dir is None:
-        frequency_dir = pathlib.Path.cwd() / "frequencies"
-
-    imf_dir.mkdir(parents=True, exist_ok=True)
-    frequency_dir.mkdir(parents=True, exist_ok=True)
-
     # Load IMFs
     imfs = load_imfs(imf_dir)
 
@@ -223,47 +264,93 @@ def fit(imf_dir, frequency_dir, output, signal, noises, model, fit_intercept, no
 
 
 @cli.command()
+@click.argument(
+    "imf_dir",
+    type=click.Path(
+        exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
+    ),
+    nargs=1,
+)
+@click.argument(
+    "frequency_dir",
+    type=click.Path(
+        exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
+    ),
+    nargs=1,
+)
+@click.argument(
+    "coeff_dir",
+    type=click.Path(
+        exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
+    ),
+    nargs=1,
+)
 @click.option(
     "-o",
     "--output",
     type=click.Path(
         exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    help="Output directory",
+    help="Output directory, defaults to current directory",
 )
 @click.option("-s", "--signal", type=str, help="Column name of signal to fit to")
-def reconstruct(output, signal):
-    """Reconstruct signal from IMFs"""
-    #
-    imfs = load_imfs(output / "imfs")
+@click.option(
+    "-n",
+    "--noises",
+    cls=OptionNargs,
+    type=tuple[float],
+    callback=parse_noise_args,
+    help="Noise values to use when fitting IMFs, defaults to all noises present in IMF_DIR, e.g. -n 0.1 0.2 0.3",
+)
+def reconstruct(imf_dir, frequency_dir, coeff_dir, output, signal, noises):
+    """
+    Reconstruct signal from IMFs using linear regression coefficients
+
+    Results will be saved as a CSV file for each noise value, named <output>/predictions_<noise>.csv
+     and a CSV file for the total signal, named <output>/reconstructed_total.csv
+
+    IMF_DIR is the directory containing the IMF files, which should be named <column_name>_imf_<noise>.csv
+            if omitted, this defaults to ./imfs
+    FREQUENCY_DIR is the directory containing the frequency files, which should be named frequencies_<noise>.csv
+            if omitted, this defaults to ./frequencies
+    COEFF_DIR is the directory containing the coefficient files, which should be named coefficients_<noise>.csv
+            if omitted, this defaults to ./coefficients
+    """
+    # Load IMFs
+    imfs = load_imfs(imf_dir / "imfs")
 
     imfs_by_noise = defaultdict(dict)
     for label, noise in imfs.keys():
         imfs_by_noise[noise][label] = imfs[(label, noise)]
 
-    nearest_freq = {
-        noise: pd.read_csv(output / f"frequencies_{noise}.csv", index_col=0)
-        for noise in imfs_by_noise
+    # Noises to process
+    if noises is None:
+        noises = list(imfs_by_noise.keys())
+
+    # Load coefficients
+    coefs = {
+        noise: LinRegCoefficients.load(coeff_dir / f"coefficients_{noise}.csv")
+        for noise in noises
     }
 
-    coefs = {
-        noise: steps.fit(
-            imfs_by_noise[noise],
-            nearest_freq[noise],
-            signal,
-            model="mreg2",
-            fit_intercept=True,
-            normalize=False,
-        )
-        for noise in imfs_by_noise
+    # Load nearest frequencies
+    nearest_freq = {
+        noise: pd.read_csv(frequency_dir / f"frequencies_{noise}.csv", index_col=0)
+        for noise in noises
     }
+
+    # Ouput directory
+    if output is None:
+        output = pathlib.Path.cwd()
+
+    output.mkdir(parents=True, exist_ok=True)
 
     # Reconstruct
     hindcast = {}
     start_date = min([min(df.index) for df in imfs.values()])
     end_date = min([max(df.index) for df in imfs.values()])
 
-    for noise in imfs_by_noise:
+    for noise in noises:
         comp_pred = steps.predict(
             imfs_by_noise[noise],
             nearest_freq[noise],
@@ -274,10 +361,13 @@ def reconstruct(output, signal):
         )
 
         hindcast[noise] = comp_pred
+        # Save prediction for each noise value
         comp_pred.to_csv(output / f"predictions_{noise}.csv")
 
-    # Reconstructed signal for each noise value
+    # Reconstruct total signal
     total = steps.combine_predictions(
         hindcast, trend=TrendModel()
     )  # TODO: implement detrending in CLI
+
+    # Save total signal
     total.to_csv(output / "reconstructed_total.csv")
