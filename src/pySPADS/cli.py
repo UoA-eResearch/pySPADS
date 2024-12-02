@@ -27,7 +27,7 @@ def cli():
     type=click.Path(
         exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    help="Output directory. Defaults to current working directory. It is highly recommended that this is a separate directory to that containing the input files",
+    help="Output directory. Defaults to ./imfs",
 )
 @click.option("--timecol", type=str, default="t", help="Column name of time index")
 @click.option(
@@ -80,7 +80,7 @@ def decompose(
 
     # Output folder
     if output is None:
-        output = pathlib.Path.cwd()
+        output = pathlib.Path.cwd() / "imfs"
     output.mkdir(parents=True, exist_ok=True)
 
     # Check if files are in output directory
@@ -113,7 +113,7 @@ def decompose(
     type=click.Path(
         exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    help="Output directory, defaults to current directory",
+    help="Output directory, defaults ./frequencies",
 )
 @click.option("-s", "--signal", type=str, help="Column name of signal to fit to")
 @click.option(
@@ -135,7 +135,7 @@ def match(imf_dir, output, signal, frequency_threshold):
 
     # Output folder
     if output is None:
-        output = pathlib.Path.cwd()
+        output = pathlib.Path.cwd() / "frequencies"
     output.mkdir(parents=True, exist_ok=True)
 
     # Re-organise imfs into dict[noise][label]
@@ -154,23 +154,72 @@ def match(imf_dir, output, signal, frequency_threshold):
 
 
 @cli.command()
-@click.option(
-    "-w",
-    "--working-dir",
-    type=click.Path(
-        exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path
-    ),
-    help="Working directory, defaults to current directory",
-)
+@click.argument('imf_dir', type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path), nargs=1)
+@click.argument('frequency_dir', type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path), nargs=1)
+@click.option("-o", "--output", type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path), help="Output directory, defaults to current directory")
 @click.option("-s", "--signal", type=str, help="Column name of signal to fit to")
-def fit(working_dir, signal):
-    """Fit IMFs to signal"""
-    if working_dir is None:
-        working_dir = pathlib.Path.cwd()
+@click.option('-n', '--noises', cls=OptionNargs, type=tuple[float], callback=parse_noise_args, help="Noise values to use when fitting IMFs, defaults to all noises present in IMF_DIR, e.g. -n 0.1 0.2 0.3")
+@click.option('-m', '--model', type=str, default="mreg2", help="Model to use for fitting linear regression, one of mreg2, linreg, ridge")
+@click.option('--fit-intercept', is_flag=True, help="Fit intercept in linear regression model")
+@click.option('--normalize', is_flag=True, help="Normalize input data in linear regression model")
+def fit(imf_dir, frequency_dir, output, signal, noises, model, fit_intercept, normalize):
+    """
+    Fit a linear model expressing each component of the signal as a linear combination of the components of the drivers
 
-    imfs = load_imfs(working_dir / "imfs")
+    Results will be saved as a JSON file for each noise value, named <output>/coefficients_<noise>.json
 
+    IMF_DIR is the directory containing the IMF files, which should be named <column_name>_imf_<noise>.csv
+            if omitted, this defaults to ./imfs
+    FREQUENCY_DIR is the directory containing the frequency files, which should be named frequencies_<noise>.csv
+            if omitted, this defaults to ./frequencies
+    """
+    # Input/output directories
+    if imf_dir is None:
+        imf_dir = pathlib.Path.cwd() / "imfs"
 
+    if frequency_dir is None:
+        frequency_dir = pathlib.Path.cwd() / "frequencies"
+
+    imf_dir.mkdir(parents=True, exist_ok=True)
+    frequency_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load IMFs
+    imfs = load_imfs(imf_dir)
+
+    imfs_by_noise = defaultdict(dict)
+    for label, noise in imfs.keys():
+        imfs_by_noise[noise][label] = imfs[(label, noise)]
+
+    # Noises to process
+    if noises is None:
+        noises = list(imfs_by_noise.keys())
+
+    # Load nearest frequencies
+    nearest_freq = {
+        noise: pd.read_csv(frequency_dir / f"frequencies_{noise}.csv", index_col=0)
+        for noise in noises
+    }
+
+    # Fit linear models
+    coefs = {
+        noise: steps.fit(
+            imfs_by_noise[noise],
+            nearest_freq[noise],
+            signal,
+            model=model,
+            fit_intercept=fit_intercept,
+            normalize=normalize,
+        )
+        for noise in noises
+    }
+
+    # Save coefficients
+    if output is None:
+        output = pathlib.Path.cwd()
+    output.mkdir(parents=True, exist_ok=True)
+
+    for noise in noises:
+        coefs[noise].save(output / f"coefficients_{noise}.csv")
 
 
 @cli.command()
