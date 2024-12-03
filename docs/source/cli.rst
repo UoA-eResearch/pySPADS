@@ -26,6 +26,33 @@ Steps
 
 For more information on each command, run `pySPADS <command> --help`.
 
+The CLI assumes the location and file name format of intermediate files, so that for a standard analysis you only need to specify minimal options, e.g.:
+
+.. code-block:: console
+
+    (.venv) $ pySPADS decompose ./input --signal shore --timecol date --noise 0.1 0.2 0.3 0.4 0.5
+    (.venv) $ pySPADS match --signal shore
+    (.venv) $ pySPADS fit --signal shore --model mreg2 --fit-intecept --normalize
+    (.venv) $ pySPADS predict --signal shore
+
+The commands above should perform a complete analysis, generating the following files, relative to the current directory:
+
+.. list-table::
+    :widths: 50 50
+    :header-rows: 0
+
+    * - ./imfs/<column_name>_imf_<noise>.csv
+      - Decomposed IMFs for each input signal and noise level
+    * - ./frequencies/frequencies_<noise>.csv
+      - The indices of the matched frequencies between signal and driver IMFs
+    * - ./coefficients/coefficients_<noise>.csv
+      - The coefficients of the linear model expressing each signal component as a function of the driver components
+    * - ./predictions_<noise>.csv
+      - The prediction of the target signal from the fitted model, for each noise level
+    * - ./reconstructed_total.csv
+      - The total signal reconstructed from the predicted components, averaged over all noise levels
+
+
 CLI reference
 =============
 
