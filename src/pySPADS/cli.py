@@ -113,12 +113,13 @@ def decompose(files, output, timecol, noise, noise_threshold, overwrite):
 
 
 @cli.command()
-@click.argument(
-    "imf_dir",
+@click.option(
+    "-i",
+    "--imf_dir",
     type=click.Path(
         exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    nargs=1,
+    help="Directory containing the IMF files, defaults to ./imfs",
 )
 @click.option(
     "-o",
@@ -140,9 +141,14 @@ def match(imf_dir, output, signal, frequency_threshold):
     Matches each component mode of the signal to component modes of each driver with similar frequencies
 
     IMF_DIR is the directory containing the IMF files, which should be named <column_name>_imf_<noise>.csv
+            if omitted, this defaults to ./imfs
 
     The output will be a CSV file for each noise value, named <output>/frequencies_<noise>.csv
     """
+    if imf_dir is None:
+        imf_dir = pathlib.Path.cwd() / "imfs"
+        assert imf_dir.exists(), f"IMF directory {imf_dir} does not exist"
+
     # Load IMFs
     imfs = load_imfs(imf_dir)
 
@@ -167,19 +173,21 @@ def match(imf_dir, output, signal, frequency_threshold):
 
 
 @cli.command()
-@click.argument(
-    "imf_dir",
+@click.option(
+    "-i",
+    "--imf_dir",
     type=click.Path(
         exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    nargs=1,
+    help="Directory containing the IMF files, defaults to ./imfs",
 )
-@click.argument(
-    "frequency_dir",
+@click.option(
+    "-f",
+    "--frequency_dir",
     type=click.Path(
         exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    nargs=1,
+    help="Directory containing the frequency files, defaults to ./frequencies",
 )
 @click.option(
     "-o",
@@ -187,7 +195,7 @@ def match(imf_dir, output, signal, frequency_threshold):
     type=click.Path(
         exists=False, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    help="Output directory, defaults to current directory",
+    help="Output directory, defaults to ./coefficients",
 )
 @click.option("-s", "--signal", type=str, help="Column name of signal to fit to")
 @click.option(
@@ -201,7 +209,7 @@ def match(imf_dir, output, signal, frequency_threshold):
 @click.option(
     "-m",
     "--model",
-    type=str,
+    type=click.Choice(["mreg2", "linreg", "ridge"]),
     default="mreg2",
     help="Model to use for fitting linear regression, one of mreg2, linreg, ridge",
 )
@@ -224,6 +232,15 @@ def fit(
     FREQUENCY_DIR is the directory containing the frequency files, which should be named frequencies_<noise>.csv
             if omitted, this defaults to ./frequencies
     """
+    # Input directories
+    if imf_dir is None:
+        imf_dir = pathlib.Path.cwd() / "imfs"
+        assert imf_dir.exists(), f"IMF directory {imf_dir} does not exist"
+
+    if frequency_dir is None:
+        frequency_dir = pathlib.Path.cwd() / "frequencies"
+        assert frequency_dir.exists(), f"Frequency directory {frequency_dir} does not exist"
+
     # Load IMFs
     imfs = load_imfs(imf_dir)
 
@@ -256,7 +273,7 @@ def fit(
 
     # Save coefficients
     if output is None:
-        output = pathlib.Path.cwd()
+        output = pathlib.Path.cwd() / "coefficients"
     output.mkdir(parents=True, exist_ok=True)
 
     for noise in noises:
@@ -264,26 +281,29 @@ def fit(
 
 
 @cli.command()
-@click.argument(
-    "imf_dir",
+@click.option(
+    "-i",
+    "--imf_dir",
     type=click.Path(
         exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    nargs=1,
+    help="Directory containing the IMF files, defaults to ./imfs",
 )
-@click.argument(
-    "frequency_dir",
+@click.option(
+    "-f",
+    "--frequency_dir",
     type=click.Path(
         exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    nargs=1,
+    help="Directory containing the frequency files, defaults to ./frequencies",
 )
-@click.argument(
-    "coeff_dir",
+@click.option(
+    "-c",
+    "--coeff_dir",
     type=click.Path(
         exists=True, file_okay=False, dir_okay=True, path_type=pathlib.Path
     ),
-    nargs=1,
+    help="Directory containing the coefficient files, defaults to ./coefficients",
 )
 @click.option(
     "-o",
@@ -316,6 +336,19 @@ def reconstruct(imf_dir, frequency_dir, coeff_dir, output, signal, noises):
     COEFF_DIR is the directory containing the coefficient files, which should be named coefficients_<noise>.csv
             if omitted, this defaults to ./coefficients
     """
+    # Input directories
+    if imf_dir is None:
+        imf_dir = pathlib.Path.cwd() / "imfs"
+        assert imf_dir.exists(), f"IMF directory {imf_dir} does not exist"
+
+    if frequency_dir is None:
+        frequency_dir = pathlib.Path.cwd() / "frequencies"
+        assert frequency_dir.exists(), f"Frequency directory {frequency_dir} does not exist"
+
+    if coeff_dir is None:
+        coeff_dir = pathlib.Path.cwd() / "coefficients"
+        assert coeff_dir.exists(), f"Coefficient directory {coeff_dir} does not exist"
+
     # Load IMFs
     imfs = load_imfs(imf_dir / "imfs")
 
