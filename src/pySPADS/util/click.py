@@ -44,8 +44,11 @@ class OptionNargs(click.Option):
         return retval
 
 
-def parse_noise_args(ctx, param, value):
-    """Parse noise values from command line"""
-    if value is None:
-        return (0.25,)
-    return tuple(float(n) for n in value)
+def parse_noise_args(default=None):
+    def inner(ctx, param, value):
+        """Parse noise values from command line"""
+        if value is None:
+            return default
+        return tuple(float(n) for n in value)
+
+    return inner

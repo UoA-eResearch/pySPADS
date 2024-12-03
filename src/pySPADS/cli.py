@@ -39,7 +39,7 @@ def cli():
     "--noise",
     cls=OptionNargs,
     type=tuple[float],
-    callback=parse_noise_args,
+    callback=parse_noise_args(default=(0.25,)),
     help="Noise values to use when decomposing IMFs, e.g. -n 0.1 0.2 0.3",
 )
 @click.option(
@@ -203,7 +203,7 @@ def match(imf_dir, output, signal, frequency_threshold):
     "--noises",
     cls=OptionNargs,
     type=tuple[float],
-    callback=parse_noise_args,
+    callback=parse_noise_args(default=None),
     help="Noise values to use when fitting IMFs, defaults to all noises present in IMF_DIR, e.g. -n 0.1 0.2 0.3",
 )
 @click.option(
@@ -239,7 +239,9 @@ def fit(
 
     if frequency_dir is None:
         frequency_dir = pathlib.Path.cwd() / "frequencies"
-        assert frequency_dir.exists(), f"Frequency directory {frequency_dir} does not exist"
+        assert (
+            frequency_dir.exists()
+        ), f"Frequency directory {frequency_dir} does not exist"
 
     # Load IMFs
     imfs = load_imfs(imf_dir)
@@ -319,7 +321,7 @@ def fit(
     "--noises",
     cls=OptionNargs,
     type=tuple[float],
-    callback=parse_noise_args,
+    callback=parse_noise_args(default=None),
     help="Noise values to use when fitting IMFs, defaults to all noises present in IMF_DIR, e.g. -n 0.1 0.2 0.3",
 )
 def reconstruct(imf_dir, frequency_dir, coeff_dir, output, signal, noises):
@@ -343,7 +345,9 @@ def reconstruct(imf_dir, frequency_dir, coeff_dir, output, signal, noises):
 
     if frequency_dir is None:
         frequency_dir = pathlib.Path.cwd() / "frequencies"
-        assert frequency_dir.exists(), f"Frequency directory {frequency_dir} does not exist"
+        assert (
+            frequency_dir.exists()
+        ), f"Frequency directory {frequency_dir} does not exist"
 
     if coeff_dir is None:
         coeff_dir = pathlib.Path.cwd() / "coefficients"
