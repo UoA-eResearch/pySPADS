@@ -7,6 +7,7 @@ deps = [
     "pytest>=8",
     "hypothesis",
     "pytest-cov",
+    "pytest-mock",
 ]
 commands = [["pytest", "--cov=pySPADS", "--cov-append", { replace = "posargs", default = ["tests"], extend = true }]]
 

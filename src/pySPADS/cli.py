@@ -129,7 +129,9 @@ def decompose(files, output, timecol, noise, noise_threshold, overwrite):
     ),
     help="Output directory, defaults ./frequencies",
 )
-@click.option("-s", "--signal", type=str, help="Column name of signal to fit to", required=True)
+@click.option(
+    "-s", "--signal", type=str, help="Column name of signal to fit to", required=True
+)
 @click.option(
     "--frequency-threshold",
     type=float,
@@ -197,7 +199,9 @@ def match(imf_dir, output, signal, frequency_threshold):
     ),
     help="Output directory, defaults to ./coefficients",
 )
-@click.option("-s", "--signal", type=str, help="Column name of signal to fit to", required=True)
+@click.option(
+    "-s", "--signal", type=str, help="Column name of signal to fit to", required=True
+)
 @click.option(
     "-n",
     "--noises",
@@ -315,7 +319,9 @@ def fit(
     ),
     help="Output directory, defaults to current directory",
 )
-@click.option("-s", "--signal", type=str, help="Column name of signal to fit to", required=True)
+@click.option(
+    "-s", "--signal", type=str, help="Column name of signal to fit to", required=True
+)
 @click.option(
     "-n",
     "--noises",

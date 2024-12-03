@@ -36,6 +36,7 @@ test = [
     "tox",
     "pytest==8.2.2",
     "hypothesis",
+    "pytest-mock"
 ]
 dev = [
     "mat73==0.62",
