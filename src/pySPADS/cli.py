@@ -354,7 +354,7 @@ def reconstruct(imf_dir, frequency_dir, coeff_dir, output, signal, noises):
         assert coeff_dir.exists(), f"Coefficient directory {coeff_dir} does not exist"
 
     # Load IMFs
-    imfs = load_imfs(imf_dir / "imfs")
+    imfs = load_imfs(imf_dir)
 
     imfs_by_noise = defaultdict(dict)
     for label, noise in imfs.keys():
@@ -366,7 +366,7 @@ def reconstruct(imf_dir, frequency_dir, coeff_dir, output, signal, noises):
 
     # Load coefficients
     coefs = {
-        noise: LinRegCoefficients.load(coeff_dir / f"coefficients_{noise}.csv")
+        noise: LinRegCoefficients.load(coeff_dir / f"coefficients_{noise}.json")
         for noise in noises
     }
 
