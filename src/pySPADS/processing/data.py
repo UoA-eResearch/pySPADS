@@ -25,7 +25,7 @@ def load_imf(file: Path) -> pd.DataFrame:
     return imf
 
 
-_imf_filename_pattern = re.compile(r"(.+)_imf_(\d+\.\d+)\.csv")
+_imf_filename_pattern = re.compile(r"(.+)_imf_(\d+\.\d+)")
 
 
 def load_imfs(folder: Path) -> dict[tuple[str, float], pd.DataFrame]:
