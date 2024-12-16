@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     # Additional full decomposition of signal, for plots
     for noise in noises:
-        filename = imf_filename(imf_dir, f"{signal}_full", noise)
+        filename = imf_filename(imf_dir / "full", signal, noise)
         if filename.exists():
             continue
 
